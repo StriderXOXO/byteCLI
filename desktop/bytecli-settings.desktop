@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=ByteCLI Settings
+Comment=Configure ByteCLI Voice Dictation
+Exec=bytecli-settings
+Icon=preferences-desktop
+Terminal=false
+Categories=Settings;Utility;Accessibility;
+Keywords=voice;dictation;whisper;speech;
+StartupNotify=true

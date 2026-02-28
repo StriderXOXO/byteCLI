@@ -1,0 +1,86 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/com/bytecli/Service">
+
+  <interface name="com.bytecli.ServiceInterface">
+
+    <!-- Methods -->
+
+    <method name="GetStatus">
+      <arg name="status" type="s" direction="out"/>
+    </method>
+
+    <method name="Stop">
+      <arg name="success" type="b" direction="out"/>
+    </method>
+
+    <method name="Restart">
+      <arg name="success" type="b" direction="out"/>
+    </method>
+
+    <method name="RefreshIndicator">
+      <arg name="success" type="b" direction="out"/>
+    </method>
+
+    <method name="SwitchModel">
+      <arg name="model_name" type="s" direction="in"/>
+      <arg name="success" type="b" direction="out"/>
+    </method>
+
+    <method name="SwitchDevice">
+      <arg name="device_name" type="s" direction="in"/>
+      <arg name="success" type="b" direction="out"/>
+    </method>
+
+    <method name="SetHotkey">
+      <arg name="keys" type="as" direction="in"/>
+      <arg name="success" type="b" direction="out"/>
+      <arg name="message" type="s" direction="out"/>
+    </method>
+
+    <method name="GetHistory">
+      <arg name="entries" type="a(sss)" direction="out"/>
+    </method>
+
+    <method name="GetAudioDevices">
+      <arg name="devices" type="a(ss)" direction="out"/>
+    </method>
+
+    <method name="GetConfig">
+      <arg name="config_json" type="s" direction="out"/>
+    </method>
+
+    <method name="SaveConfig">
+      <arg name="config_json" type="s" direction="in"/>
+      <arg name="success" type="b" direction="out"/>
+    </method>
+
+    <!-- Signals -->
+
+    <signal name="StatusChanged">
+      <arg name="status" type="s"/>
+    </signal>
+
+    <signal name="ModelSwitchProgress">
+      <arg name="model_name" type="s"/>
+      <arg name="progress" type="s"/>
+    </signal>
+
+    <signal name="DeviceSwitchProgress">
+      <arg name="device_name" type="s"/>
+      <arg name="progress" type="s"/>
+    </signal>
+
+    <signal name="RecordingStarted"/>
+
+    <signal name="RecordingStopped">
+      <arg name="transcription" type="s"/>
+    </signal>
+
+    <signal name="AudioDeviceChanged">
+      <arg name="devices" type="a(ss)"/>
+    </signal>
+
+  </interface>
+
+</node>

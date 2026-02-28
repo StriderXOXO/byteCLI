@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=ByteCLI Service
+Comment=ByteCLI Voice Dictation Background Service
+Exec=bytecli-service
+Terminal=false
+Hidden=true
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Phase=Applications
+Categories=Utility;Accessibility;

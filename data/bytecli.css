@@ -1,0 +1,449 @@
+/*
+ * ByteCLI -- GTK 4 dark-theme stylesheet
+ *
+ * All design tokens are derived from the ByteCLI .pen design file.
+ * Colour palette, radii, spacing and typography are centralised here so
+ * that every widget across the settings panel, indicator and toasts
+ * shares a single source of truth.
+ */
+
+/* ===================================================================
+   CSS Custom Properties (design tokens)
+   =================================================================== */
+@define-color bg_color          #111111;
+@define-color fg_color          #FFFFFF;
+@define-color card_color        #1A1A1A;
+@define-color muted_color       #2E2E2E;
+@define-color muted_fg_color    #B8B9B6;
+@define-color primary_color     #FF8400;
+@define-color primary_fg_color  #111111;
+@define-color border_color      #2E2E2E;
+@define-color secondary_color   #2E2E2E;
+@define-color secondary_fg_color #FFFFFF;
+@define-color success_fg_color  #B6FFCE;
+@define-color error_fg_color    #FF5C33;
+@define-color warning_fg_color  #FF8400;
+@define-color info_fg_color     #B2B2FF;
+@define-color input_color       #2E2E2E;
+@define-color destructive_color #FF5C33;
+
+/* ===================================================================
+   Global / Window
+   =================================================================== */
+window,
+.background {
+    background-color: @bg_color;
+    color: @fg_color;
+}
+
+/* ===================================================================
+   Typography
+   =================================================================== */
+* {
+    font-family: "Geist", "Inter", "Cantarell", sans-serif;
+}
+
+.mono {
+    font-family: "JetBrains Mono", "Source Code Pro", monospace;
+}
+
+.text-xs   { font-size: 10px; }
+.text-sm   { font-size: 12px; }
+.text-base { font-size: 14px; }
+.text-lg   { font-size: 16px; }
+.text-xl   { font-size: 20px; }
+.text-2xl  { font-size: 24px; }
+
+.font-normal   { font-weight: 400; }
+.font-medium   { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold     { font-weight: 700; }
+
+/* ===================================================================
+   Text colour utilities
+   =================================================================== */
+.text-white      { color: #FFFFFF; }
+.text-muted      { color: @muted_fg_color; }
+.text-primary    { color: @primary_color; }
+.text-success    { color: @success_fg_color; }
+.text-error      { color: @error_fg_color; }
+.text-warning    { color: @warning_fg_color; }
+.text-info       { color: @info_fg_color; }
+.text-destructive { color: @destructive_color; }
+
+/* ===================================================================
+   Buttons
+   =================================================================== */
+
+/* Primary (orange CTA) */
+.primary-btn {
+    background-color: @primary_color;
+    color: @primary_fg_color;
+    border-radius: 999px;
+    min-height: 40px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
+.primary-btn:hover {
+    background-color: shade(@primary_color, 1.08);
+}
+
+.primary-btn:active {
+    background-color: shade(@primary_color, 0.9);
+}
+
+/* Secondary (dark outlined) */
+.secondary-btn {
+    background-color: @bg_color;
+    color: @secondary_fg_color;
+    border: 1px solid @border_color;
+    border-radius: 999px;
+    min-height: 40px;
+    padding: 10px 16px;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: none;
+    outline: none;
+}
+
+.secondary-btn:hover {
+    background-color: @muted_color;
+}
+
+.secondary-btn:active {
+    background-color: shade(@muted_color, 0.85);
+}
+
+/* Disabled state */
+.disabled-btn {
+    opacity: 0.4;
+}
+
+.disabled-btn:hover,
+.disabled-btn:active {
+    opacity: 0.4;
+}
+
+/* Small button variant */
+.btn-sm {
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* Icon-only button */
+.icon-btn {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    padding: 8px;
+    border-radius: 8px;
+    min-width: 36px;
+    min-height: 36px;
+}
+
+.icon-btn:hover {
+    background-color: alpha(@muted_color, 0.5);
+}
+
+/* ===================================================================
+   Cards / Sections
+   =================================================================== */
+.section-card {
+    background-color: @muted_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.section-card-inner {
+    background-color: @card_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+/* ===================================================================
+   Toast / Notification
+   =================================================================== */
+.toast {
+    background-color: @card_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: @fg_color;
+}
+
+.toast-success {
+    border-left: 3px solid @success_fg_color;
+}
+
+.toast-error {
+    border-left: 3px solid @error_fg_color;
+}
+
+.toast-warning {
+    border-left: 3px solid @warning_fg_color;
+}
+
+.toast-info {
+    border-left: 3px solid @info_fg_color;
+}
+
+/* ===================================================================
+   Floating Indicator Pill
+   =================================================================== */
+.indicator-pill {
+    background-color: @card_color;
+    border-radius: 20px;
+    border: 1px solid @border_color;
+    padding: 8px 16px;
+}
+
+.indicator-pill-recording {
+    border-color: @primary_color;
+}
+
+/* ===================================================================
+   Status Dots
+   =================================================================== */
+.status-dot {
+    border-radius: 999px;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+.status-dot-running {
+    background-color: @success_fg_color;
+}
+
+.status-dot-stopped {
+    background-color: @error_fg_color;
+}
+
+.status-dot-starting,
+.status-dot-stopping,
+.status-dot-restarting {
+    background-color: @warning_fg_color;
+}
+
+.status-dot-failed {
+    background-color: @destructive_color;
+}
+
+.status-dot-idle {
+    background-color: @muted_fg_color;
+}
+
+.status-dot-recording {
+    background-color: @primary_color;
+}
+
+/* ===================================================================
+   Radio Buttons
+   =================================================================== */
+.radio-row {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+.radio-row:hover {
+    background-color: alpha(@muted_color, 0.5);
+}
+
+.radio-row-active {
+    border: 1px solid @primary_color;
+    background-color: alpha(@primary_color, 0.08);
+}
+
+radiobutton radio {
+    background-color: @muted_color;
+    border: 1px solid @border_color;
+    min-width: 18px;
+    min-height: 18px;
+}
+
+radiobutton radio:checked {
+    background-color: @primary_color;
+    border-color: @primary_color;
+    color: @primary_fg_color;
+}
+
+/* ===================================================================
+   Check Buttons
+   =================================================================== */
+checkbutton check {
+    background-color: @muted_color;
+    border: 1px solid @border_color;
+    border-radius: 4px;
+    min-width: 18px;
+    min-height: 18px;
+}
+
+checkbutton check:checked {
+    background-color: @primary_color;
+    border-color: @primary_color;
+    color: @primary_fg_color;
+}
+
+/* ===================================================================
+   Dropdowns / ComboBoxes
+   =================================================================== */
+.dropdown-btn {
+    background-color: @input_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: @fg_color;
+    min-height: 36px;
+}
+
+.dropdown-btn:hover {
+    border-color: @muted_fg_color;
+}
+
+.dropdown-menu {
+    background-color: @card_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.dropdown-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: @fg_color;
+}
+
+.dropdown-item:hover {
+    background-color: alpha(@muted_color, 0.6);
+}
+
+.dropdown-item-active {
+    background-color: alpha(@primary_color, 0.12);
+    color: @primary_color;
+}
+
+/* ===================================================================
+   Text Inputs
+   =================================================================== */
+entry,
+.text-input {
+    background-color: @input_color;
+    border: 1px solid @border_color;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: @fg_color;
+    min-height: 36px;
+    caret-color: @primary_color;
+}
+
+entry:focus,
+.text-input:focus {
+    border-color: @primary_color;
+    outline: none;
+}
+
+/* ===================================================================
+   Scrollbar
+   =================================================================== */
+scrollbar slider {
+    background-color: @muted_color;
+    border-radius: 999px;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+scrollbar slider:hover {
+    background-color: @muted_fg_color;
+}
+
+/* ===================================================================
+   Separator / Divider
+   =================================================================== */
+separator {
+    background-color: @border_color;
+    min-height: 1px;
+}
+
+/* ===================================================================
+   Section Labels
+   =================================================================== */
+.section-label {
+    color: @muted_fg_color;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.section-title {
+    color: @fg_color;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ===================================================================
+   Hotkey Capture
+   =================================================================== */
+.hotkey-capture {
+    background-color: @input_color;
+    border: 1px dashed @primary_color;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: @muted_fg_color;
+    font-family: "JetBrains Mono", monospace;
+}
+
+/* ===================================================================
+   History List
+   =================================================================== */
+.history-row {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border-bottom: 1px solid @border_color;
+}
+
+.history-row:hover {
+    background-color: alpha(@muted_color, 0.4);
+}
+
+.history-text {
+    color: @fg_color;
+    font-size: 13px;
+}
+
+.history-time {
+    color: @muted_fg_color;
+    font-size: 11px;
+}
+
+/* ===================================================================
+   Tooltip
+   =================================================================== */
+tooltip {
+    background-color: @card_color;
+    border: 1px solid @border_color;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: @fg_color;
+    font-size: 12px;
+}
+
+/* ===================================================================
+   Link-style labels
+   =================================================================== */
+.link-label {
+    color: @primary_color;
+    font-size: 12px;
+}
+
+.link-label:hover {
+    text-decoration: underline;
+}

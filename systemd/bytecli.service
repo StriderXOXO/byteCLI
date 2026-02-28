@@ -1,0 +1,16 @@
+[Unit]
+Description=ByteCLI Voice Dictation Service
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/bytecli-service
+Environment=DISPLAY=:0
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+[Install]
+WantedBy=default.target

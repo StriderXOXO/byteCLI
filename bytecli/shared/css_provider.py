@@ -1,0 +1,71 @@
+"""
+CSS provider loader for ByteCLI.
+
+Reads ``data/bytecli.css`` and installs the stylesheet on the default
+GDK display so that all GTK 4 widgets in the process pick up the
+ByteCLI design tokens automatically.
+
+Usage (typically called once during application startup):
+
+    from bytecli.shared.css_provider import load_css
+    load_css()
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+
+logger = logging.getLogger(__name__)
+
+# Resolve the path to data/bytecli.css relative to the project root.
+# The project layout is:
+#   <root>/bytecli/shared/css_provider.py   <- this file
+#   <root>/data/bytecli.css                 <- target CSS
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.abspath(os.path.join(_THIS_DIR, os.pardir, os.pardir))
+_CSS_PATH = os.path.join(_PROJECT_ROOT, "data", "bytecli.css")
+
+
+def load_css() -> None:
+    """Load the ByteCLI CSS stylesheet and apply it to the default display.
+
+    This must be called **after** ``Gtk.init()`` (or after the ``Gtk.Application``
+    has been constructed) so that a default display is available.
+
+    Raises no exceptions -- errors are logged and the application continues
+    with the GTK default styling.
+    """
+    try:
+        import gi
+
+        gi.require_version("Gtk", "4.0")
+        gi.require_version("Gdk", "4.0")
+        from gi.repository import Gdk, Gtk
+    except (ImportError, ValueError) as exc:
+        logger.error("GTK 4 Python bindings are not available: %s", exc)
+        return
+
+    if not os.path.isfile(_CSS_PATH):
+        logger.error("CSS file not found: %s", _CSS_PATH)
+        return
+
+    provider = Gtk.CssProvider()
+
+    try:
+        provider.load_from_path(_CSS_PATH)
+    except Exception as exc:
+        logger.error("Failed to parse CSS file %s: %s", _CSS_PATH, exc)
+        return
+
+    display = Gdk.Display.get_default()
+    if display is None:
+        logger.error("No default GDK display -- cannot apply CSS.")
+        return
+
+    Gtk.StyleContext.add_provider_for_display(
+        display,
+        provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
+    logger.debug("ByteCLI CSS loaded from %s", _CSS_PATH)
