@@ -96,7 +96,7 @@ Three processes, one D-Bus:
 ## Configuration
 
 <div align="center">
-<img src="assets/configPanel.png" width="480" alt="ByteCLI Settings Panel" />
+<img src="assets/configPanel.png" width="240" alt="ByteCLI Settings Panel" />
 <br><em>Dark-themed GTK 4 settings panel — model, device, audio, hotkey, all in one place.</em>
 </div>
 
