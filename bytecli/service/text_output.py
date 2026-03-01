@@ -1,10 +1,9 @@
 """
-Text output via clipboard paste (``xclip`` + ``xdotool key ctrl+v``).
+Text output via clipboard paste (``xclip`` + ``xdotool key``).
 
-Copies the transcribed text to the X clipboard and simulates Ctrl+V to
-paste it into the focused window.  Before pasting, all modifier keys
-are explicitly released via ``xdotool keyup`` to prevent the XGrabKey
-hotkey grab from interfering with the synthesized Ctrl+V keystroke.
+Copies the transcribed text to the X clipboard and simulates
+``Ctrl+Shift+V`` into the focused window.  This shortcut works in both
+terminal emulators and most GUI applications.
 """
 
 from __future__ import annotations
@@ -49,17 +48,21 @@ def type_text(text: str) -> Tuple[bool, bool]:
 
     time.sleep(0.05)
 
-    # 4. Simulate Ctrl+V to paste.
+    # 4. Paste via Ctrl+Shift+V (works in both terminals and GUI apps).
+    paste_key = "ctrl+shift+v"
+
     try:
         subprocess.run(
-            ["xdotool", "key", "--clearmodifiers", "ctrl+v"],
+            ["xdotool", "key", "--clearmodifiers", paste_key],
             check=True,
             timeout=5,
         )
-        logger.debug("Text pasted via Ctrl+V (%d chars).", len(text))
+        logger.debug(
+            "Text pasted via %s (%d chars).", paste_key, len(text)
+        )
     except (subprocess.CalledProcessError, FileNotFoundError,
             subprocess.TimeoutExpired) as exc:
-        logger.warning("xdotool key ctrl+v failed: %s", exc)
+        logger.warning("xdotool key %s failed: %s", paste_key, exc)
         # Text is still on the clipboard — user can paste manually.
         return (True, True)
 
@@ -79,6 +82,7 @@ def copy_to_clipboard(text: str) -> bool:
 # ------------------------------------------------------------------
 # Internal helpers
 # ------------------------------------------------------------------
+
 
 def _get_clipboard() -> str | None:
     """Return the current CLIPBOARD content, or ``None`` on failure."""
