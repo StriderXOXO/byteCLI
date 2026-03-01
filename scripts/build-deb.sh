@@ -41,27 +41,24 @@ mkdir -p "${STAGING}"
 # 2. Install Python package into staging prefix
 # ----------------------------------------------------------------
 info "Installing Python package into staging prefix..."
-pip3 install --prefix="${STAGING}/usr" --no-deps --no-warn-script-location "${PROJECT_DIR}" 2>&1 | tail -1
+pip3 install --prefix="${STAGING}/usr" --no-deps --no-warn-script-location "${PROJECT_DIR}" 2>&1 | grep -v '^\[notice\]' || true
 
-# Find the site-packages directory that was created
-SITE_PACKAGES=$(find "${STAGING}/usr/lib" -type d -name "site-packages" 2>/dev/null | head -1)
-if [ -z "${SITE_PACKAGES}" ]; then
-    # Try dist-packages (Debian/Ubuntu convention)
-    SITE_PACKAGES=$(find "${STAGING}/usr/lib" -type d -name "dist-packages" 2>/dev/null | head -1)
-fi
+# Find the dist-packages/site-packages directory that pip created.
+# On Debian/Ubuntu, --prefix installs to <prefix>/local/lib/pythonX.Y/dist-packages.
+SITE_PACKAGES=$(find "${STAGING}/usr" -type d \( -name "dist-packages" -o -name "site-packages" \) 2>/dev/null | head -1)
 
 if [ -z "${SITE_PACKAGES}" ]; then
     error "Could not find installed Python package in staging directory"
 fi
 
-# Move to dist-packages (Debian convention)
+# Move to the standard Debian path: /usr/lib/python3/dist-packages
 DIST_PACKAGES="${STAGING}/usr/lib/python3/dist-packages"
 if [ "${SITE_PACKAGES}" != "${DIST_PACKAGES}" ]; then
     mkdir -p "${DIST_PACKAGES}"
     cp -r "${SITE_PACKAGES}/${PACKAGE_NAME}" "${DIST_PACKAGES}/"
     cp -r "${SITE_PACKAGES}/${PACKAGE_NAME}"*.dist-info "${DIST_PACKAGES}/" 2>/dev/null || true
-    # Clean up the pip-created tree
-    rm -rf "${STAGING}/usr/lib/python3."*
+    # Clean up the pip-created tree (e.g. usr/local/lib/...)
+    rm -rf "${STAGING}/usr/local"
 fi
 success "Python package installed to ${DIST_PACKAGES}"
 
