@@ -45,9 +45,8 @@ class SettingsWindow(Adw.ApplicationWindow):
     def __init__(self, application: Adw.Application) -> None:
         super().__init__(application=application)
 
-        self.set_default_size(480, 1150)
-        self.set_resizable(False)
-        self.set_title(i18n.t("settings.title", fallback="Voice Dictation Settings"))
+        self.set_default_size(480, -1)
+        self.set_title(i18n.t("panel.title", fallback="Voice Dictation Settings"))
 
         # Apply window CSS.
         self.add_css_class("settings-window")
@@ -77,11 +76,6 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._overlay = Gtk.Overlay()
         self._toast_overlay = SettingsToastOverlay(self._overlay)
 
-        # Scrolled container.
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_vexpand(True)
-
         # Main content box.
         self._content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         self._content_box.set_margin_start(24)
@@ -91,7 +85,7 @@ class SettingsWindow(Adw.ApplicationWindow):
 
         # Title.
         self._title_label = Gtk.Label(
-            label=i18n.t("settings.title", fallback="Voice Dictation Settings")
+            label=i18n.t("panel.title", fallback="Voice Dictation Settings")
         )
         self._title_label.add_css_class("mono")
         self._title_label.add_css_class("font-semibold")
@@ -118,9 +112,7 @@ class SettingsWindow(Adw.ApplicationWindow):
         )
         self._content_box.append(self._audio_section)
 
-        self._hotkey_section = HotkeyConfigSection(
-            self._dbus_client, self._config, self._on_config_value_changed
-        )
+        self._hotkey_section = HotkeyConfigSection()
         self._content_box.append(self._hotkey_section)
 
         self._language_section = LanguageSelectSection(
@@ -137,7 +129,7 @@ class SettingsWindow(Adw.ApplicationWindow):
         btn_row.set_margin_top(8)
 
         self._cancel_btn = StyledButton(
-            label=i18n.t("settings.cancel", fallback="Cancel"),
+            label=i18n.t("panel.cancel", fallback="Cancel"),
             variant="secondary",
         )
         self._cancel_btn.connect("clicked", self._on_cancel)
@@ -145,7 +137,7 @@ class SettingsWindow(Adw.ApplicationWindow):
         btn_row.append(self._cancel_btn)
 
         self._save_btn = StyledButton(
-            label=i18n.t("settings.save", fallback="Save"),
+            label=i18n.t("panel.save", fallback="Save"),
             variant="primary",
         )
         self._save_btn.connect("clicked", self._on_save)
@@ -154,8 +146,7 @@ class SettingsWindow(Adw.ApplicationWindow):
 
         self._content_box.append(btn_row)
 
-        scroll.set_child(self._content_box)
-        self._overlay.set_child(scroll)
+        self._overlay.set_child(self._content_box)
         self.set_content(self._overlay)
 
     # ------------------------------------------------------------------
@@ -192,7 +183,6 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._model_section.collect_config(self._config)
         self._device_section.collect_config(self._config)
         self._audio_section.collect_config(self._config)
-        self._hotkey_section.collect_config(self._config)
         self._startup_section.collect_config(self._config)
 
         def _on_saved(result):
@@ -200,12 +190,12 @@ class SettingsWindow(Adw.ApplicationWindow):
                 self._config_snapshot = copy.deepcopy(self._config)
                 self._update_save_cancel()
                 self._toast_overlay.show_toast(
-                    i18n.t("settings.saved", fallback="Settings saved successfully"),
+                    i18n.t("toast.settings_saved", fallback="Settings saved"),
                     variant="success",
                 )
             else:
                 self._toast_overlay.show_toast(
-                    i18n.t("settings.save_failed", fallback="Failed to save settings"),
+                    i18n.t("toast.settings_save_failed", fallback="Failed to save settings"),
                     variant="error",
                 )
 
@@ -217,7 +207,6 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._model_section.apply_config(self._config)
         self._device_section.apply_config(self._config)
         self._audio_section.apply_config(self._config)
-        self._hotkey_section.apply_config(self._config)
         self._startup_section.apply_config(self._config)
         self._update_save_cancel()
 
@@ -228,10 +217,10 @@ class SettingsWindow(Adw.ApplicationWindow):
     def _on_language_changed(self, lang: str) -> None:
         """Refresh all labels when the interface language changes."""
         self._title_label.set_text(
-            i18n.t("settings.title", fallback="Voice Dictation Settings")
+            i18n.t("panel.title", fallback="Voice Dictation Settings")
         )
-        self._save_btn.set_label(i18n.t("settings.save", fallback="Save"))
-        self._cancel_btn.set_label(i18n.t("settings.cancel", fallback="Cancel"))
+        self._save_btn.set_label(i18n.t("panel.save", fallback="Save"))
+        self._cancel_btn.set_label(i18n.t("panel.cancel", fallback="Cancel"))
 
         # Propagate to sections that support refresh.
         for section in (

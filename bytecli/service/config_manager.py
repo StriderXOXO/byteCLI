@@ -141,8 +141,6 @@ class ConfigManager:
         if not isinstance(hk, dict):
             errors.append("hotkey")
         else:
-            if hk.get("mode") not in ("double", "triple"):
-                errors.append("hotkey.mode")
             keys = hk.get("keys")
             if (
                 not isinstance(keys, list)

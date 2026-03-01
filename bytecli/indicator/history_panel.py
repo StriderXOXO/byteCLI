@@ -4,6 +4,11 @@ HistoryPanel -- popup window showing recent voice-input transcriptions.
 Positioned directly above the indicator pill.  Fetches entries from the
 ByteCLI service via D-Bus ``GetHistory()`` and lets the user copy any
 entry to the clipboard with a single click.
+
+Visibility is managed by polling the global pointer position (via
+``xdotool getmouselocation``) rather than GTK4 EventControllerMotion,
+because motion events are not reliably delivered to non-focusable
+popup windows.
 """
 
 from __future__ import annotations
@@ -28,6 +33,11 @@ _PANEL_WIDTH = 300
 _MAX_ENTRIES = 20
 _EMPTY_HEIGHT = 120
 
+# Polling interval in milliseconds.
+_POLL_INTERVAL_MS = 200
+# How many consecutive "outside" polls before hiding (3 × 200 ms = 600 ms).
+_MISS_THRESHOLD = 3
+
 
 class HistoryPanel(Gtk.Window):
     """Popup window listing recent transcription entries."""
@@ -40,7 +50,10 @@ class HistoryPanel(Gtk.Window):
         super().__init__()
         self._parent_window = parent_window
         self._dbus_client = dbus_client
-        self._leave_timeout_id: Optional[int] = None
+
+        # Pointer polling state.
+        self._poll_source_id: Optional[int] = None
+        self._miss_count = 0
 
         # Window setup.
         self.set_decorated(False)
@@ -64,7 +77,7 @@ class HistoryPanel(Gtk.Window):
         header.set_margin_top(10)
         header.set_margin_bottom(10)
 
-        title_label = Gtk.Label(label=i18n.t("history.title", fallback="History"))
+        title_label = Gtk.Label(label=i18n.t("indicator.history", fallback="History"))
         title_label.add_css_class("font-semibold")
         title_label.set_halign(Gtk.Align.START)
         _apply_font_size(title_label, 13)
@@ -98,13 +111,11 @@ class HistoryPanel(Gtk.Window):
 
         self.set_child(self._outer_box)
 
-        # Mouse leave detection.
-        motion = Gtk.EventControllerMotion()
-        motion.connect("leave", self._on_mouse_leave)
-        self.add_controller(motion)
-
         # Position after realize.
         self.connect("realize", self._on_realize)
+
+        # Start/stop polling when visibility changes.
+        self.connect("notify::visible", self._on_visibility_changed)
 
         # Load entries.
         self.refresh()
@@ -169,7 +180,7 @@ class HistoryPanel(Gtk.Window):
 
         x = geo.x + (geo.width - _PANEL_WIDTH) // 2
         # Indicator is 48px from bottom + ~40px tall. Panel goes above that.
-        y = geo.y + geo.height - 48 - 40 - nat_height - 8
+        y = geo.y + geo.height - 48 - 40 - nat_height - 2
 
         surface = self.get_surface()
         if surface is not None:
@@ -183,18 +194,74 @@ class HistoryPanel(Gtk.Window):
         return False
 
     # ------------------------------------------------------------------
-    # Mouse leave
+    # Pointer polling (replaces EventControllerMotion)
     # ------------------------------------------------------------------
 
-    def _on_mouse_leave(self, controller) -> None:
-        if self._leave_timeout_id is not None:
-            GLib.source_remove(self._leave_timeout_id)
-        self._leave_timeout_id = GLib.timeout_add(300, self._delayed_hide)
+    def _on_visibility_changed(self, widget, pspec) -> None:
+        if self.get_visible():
+            self._start_hover_poll()
+        else:
+            self._stop_hover_poll()
 
-    def _delayed_hide(self) -> bool:
-        self.set_visible(False)
-        self._leave_timeout_id = None
-        return False
+    def _start_hover_poll(self) -> None:
+        self._miss_count = 0
+        if self._poll_source_id is None:
+            self._poll_source_id = GLib.timeout_add(
+                _POLL_INTERVAL_MS, self._check_pointer
+            )
+
+    def _stop_hover_poll(self) -> None:
+        if self._poll_source_id is not None:
+            GLib.source_remove(self._poll_source_id)
+            self._poll_source_id = None
+
+    def _check_pointer(self) -> bool:
+        """Poll the pointer; hide if not over the panel or indicator window."""
+        try:
+            result = subprocess.run(
+                ["xdotool", "getmouselocation", "--shell"],
+                capture_output=True, text=True, timeout=1,
+            )
+            if result.returncode != 0:
+                return True  # keep polling
+
+            window_id = 0
+            for line in result.stdout.splitlines():
+                if line.startswith("WINDOW="):
+                    window_id = int(line[7:])
+                    break
+
+        except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+            return True  # keep polling on error
+
+        if window_id in self._get_our_xids():
+            self._miss_count = 0
+        else:
+            self._miss_count += 1
+            if self._miss_count >= _MISS_THRESHOLD:
+                self.set_visible(False)
+                self._poll_source_id = None
+                return False  # stop polling
+
+        return True  # keep polling
+
+    def _get_our_xids(self) -> set[int]:
+        """Return the X11 window IDs of the panel and the indicator."""
+        xids: set[int] = set()
+        # Panel XID.
+        surface = self.get_surface()
+        if surface is not None:
+            try:
+                from gi.repository import GdkX11
+                if isinstance(surface, GdkX11.X11Surface):
+                    xids.add(surface.get_xid())
+            except (ImportError, AttributeError):
+                pass
+        # Indicator XID.
+        indicator_xid = self._parent_window.get_xid()
+        if indicator_xid:
+            xids.add(indicator_xid)
+        return xids
 
     # ------------------------------------------------------------------
     # Data loading
@@ -222,12 +289,20 @@ class HistoryPanel(Gtk.Window):
 
         count = len(entries)
         self._count_label.set_text(
-            i18n.t("history.entries_count", count=count, fallback=f"{count} entries")
+            i18n.t("indicator.history_count", n=count, fallback=f"{count} entries")
         )
 
         for idx, entry in enumerate(entries):
-            text = entry.get("text", str(entry)) if isinstance(entry, dict) else str(entry)
-            timestamp = entry.get("timestamp", "") if isinstance(entry, dict) else ""
+            # D-Bus returns (text, timestamp, id) tuples.
+            if isinstance(entry, (tuple, list)) and len(entry) >= 1:
+                text = str(entry[0])
+                timestamp = str(entry[1]) if len(entry) >= 2 else ""
+            elif isinstance(entry, dict):
+                text = entry.get("text", str(entry))
+                timestamp = entry.get("timestamp", "")
+            else:
+                text = str(entry)
+                timestamp = ""
             row = self._build_entry_row(text, timestamp)
             self._entries_box.append(row)
 
@@ -295,7 +370,7 @@ class HistoryPanel(Gtk.Window):
         empty_box.append(icon)
 
         label = Gtk.Label(
-            label=i18n.t("history.empty", fallback="No voice input history yet")
+            label=i18n.t("indicator.history_empty", fallback="No voice input history yet")
         )
         label.add_css_class("text-muted")
         _apply_font_size(label, 13)
@@ -326,7 +401,7 @@ class HistoryPanel(Gtk.Window):
 
         ToastManager.instance().show_toast(
             "success",
-            i18n.t("history.copied", fallback="Copied to clipboard"),
+            i18n.t("toast.copied", fallback="Copied to clipboard"),
         )
 
     # ------------------------------------------------------------------

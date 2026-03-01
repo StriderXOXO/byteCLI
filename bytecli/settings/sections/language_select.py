@@ -49,7 +49,7 @@ class LanguageSelectSection(Gtk.Box):
         self._suppress_signal = False
 
         self._card = SectionCard(
-            title=i18n.t("settings.language.title", fallback="Language")
+            title=i18n.t("lang.label", fallback="Language")
         )
 
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -57,7 +57,7 @@ class LanguageSelectSection(Gtk.Box):
 
         self._row_label = Gtk.Label(
             label=i18n.t(
-                "settings.language.interface",
+                "lang.interface",
                 fallback="Interface Language:",
             )
         )
@@ -129,11 +129,11 @@ class LanguageSelectSection(Gtk.Box):
 
     def refresh_labels(self) -> None:
         self._card.set_title(
-            i18n.t("settings.language.title", fallback="Language")
+            i18n.t("lang.label", fallback="Language")
         )
         self._row_label.set_text(
             i18n.t(
-                "settings.language.interface",
+                "lang.interface",
                 fallback="Interface Language:",
             )
         )

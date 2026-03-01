@@ -191,8 +191,8 @@ def main() -> None:
 
         hotkey_manager.on_press(recording_fsm.on_hotkey_toggle)
 
-        # 15. Register hotkey from config.
-        hotkey_keys = config.get("hotkey", {}).get("keys", ["Ctrl", "Alt", "V"])
+        # 15. Register the fixed Ctrl+Alt+V hotkey.
+        hotkey_keys = ["Ctrl", "Alt", "V"]
         hotkey_manager.register(hotkey_keys)
 
         # 16. Start audio hotplug monitor.

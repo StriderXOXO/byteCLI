@@ -206,32 +206,6 @@ class DBusClient:
             logger.error("Failed to unpack GetAudioDevices result: %s", exc)
             return None
 
-    # --- Hotkey ----------------------------------------------------------
-
-    def set_hotkey(
-        self, mode: str, keys: list[str], callback: Optional[Callable] = None
-    ) -> None:
-        import json
-        hotkey = {"mode": mode, "keys": keys}
-        params = GLib.Variant("(s)", (json.dumps(hotkey),))
-        self._call_async("SetHotkey", parameters=params, callback=callback)
-
-    def validate_hotkey(self, mode: str, keys: list[str]) -> Optional[dict]:
-        import json
-        hotkey = {"mode": mode, "keys": keys}
-        params = GLib.Variant("(s)", (json.dumps(hotkey),))
-        result = self._call_sync("ValidateHotkey", parameters=params)
-        if result is None:
-            return None
-        try:
-            raw = result.unpack()[0] if result.n_children() > 0 else result.unpack()
-            if isinstance(raw, str):
-                return json.loads(raw)
-            return dict(raw)
-        except Exception as exc:
-            logger.error("Failed to unpack ValidateHotkey result: %s", exc)
-            return None
-
     # --- History ---------------------------------------------------------
 
     def get_history(self) -> Optional[list]:

@@ -51,12 +51,12 @@ class DeviceSelectionSection(Gtk.Box):
         self._has_cuda = _cuda_available()
 
         self._card = SectionCard(
-            title=i18n.t("settings.device.title", fallback="Device")
+            title=i18n.t("device.label", fallback="Device")
         )
 
         # GPU option.
         self._gpu_radio = RadioOption(
-            label_text=i18n.t("settings.device.gpu", fallback="GPU (CUDA)"),
+            label_text=i18n.t("device.gpu", fallback="GPU (CUDA)"),
             description_text="",
             on_clicked=lambda r: self._on_radio_clicked("gpu"),
         )
@@ -64,7 +64,7 @@ class DeviceSelectionSection(Gtk.Box):
 
         # CPU option.
         self._cpu_radio = RadioOption(
-            label_text=i18n.t("settings.device.cpu", fallback="CPU"),
+            label_text=i18n.t("device.cpu", fallback="CPU"),
             description_text="",
             on_clicked=lambda r: self._on_radio_clicked("cpu"),
         )
@@ -85,12 +85,12 @@ class DeviceSelectionSection(Gtk.Box):
         if not self._has_cuda:
             self._gpu_radio.disabled = True
             self._cuda_warning.set_text(
-                i18n.t("settings.device.no_cuda", fallback="CUDA not detected")
+                i18n.t("device.cuda_not_detected", fallback="CUDA not detected")
             )
             self._cuda_warning.set_visible(True)
             self._config["device"] = "cpu"
             self._cpu_radio.description_text = i18n.t(
-                "settings.device.auto_selected", fallback="(auto-selected)"
+                "device.auto_selected", fallback="(auto-selected)"
             )
 
         self._apply_selection(self._config.get("device", "gpu"))
@@ -172,5 +172,5 @@ class DeviceSelectionSection(Gtk.Box):
 
     def refresh_labels(self) -> None:
         self._card.set_title(
-            i18n.t("settings.device.title", fallback="Device")
+            i18n.t("device.label", fallback="Device")
         )

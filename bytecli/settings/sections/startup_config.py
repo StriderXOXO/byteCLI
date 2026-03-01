@@ -51,7 +51,7 @@ class StartupConfigSection(Gtk.Box):
         self._suppress_signal = False
 
         self._card = SectionCard(
-            title=i18n.t("settings.startup.title", fallback="Startup")
+            title=i18n.t("startup.label", fallback="Startup")
         )
 
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -64,7 +64,7 @@ class StartupConfigSection(Gtk.Box):
 
         self._label = Gtk.Label(
             label=i18n.t(
-                "settings.startup.label",
+                "startup.auto",
                 fallback="Start automatically on system boot",
             )
         )
@@ -140,11 +140,11 @@ class StartupConfigSection(Gtk.Box):
 
     def refresh_labels(self) -> None:
         self._card.set_title(
-            i18n.t("settings.startup.title", fallback="Startup")
+            i18n.t("startup.label", fallback="Startup")
         )
         self._label.set_text(
             i18n.t(
-                "settings.startup.label",
+                "startup.auto",
                 fallback="Start automatically on system boot",
             )
         )

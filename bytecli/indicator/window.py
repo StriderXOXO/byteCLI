@@ -45,6 +45,7 @@ class IndicatorWindow(Gtk.Window):
         self._timer_source_id: Optional[int] = None
         self._leave_timeout_id: Optional[int] = None
         self._history_panel = None
+        self._indicator_geo: tuple[int, int, int, int] = (0, 0, 220, 40)
 
         # Window chrome.
         self.set_decorated(False)
@@ -223,6 +224,7 @@ class IndicatorWindow(Gtk.Window):
 
         x = geo.x + (geo.width - nat_width) // 2
         y = geo.y + geo.height - _BOTTOM_MARGIN - 40  # 40px approx pill height
+        self._indicator_geo = (x, y, nat_width, 40)
 
         surface = self.get_surface()
         if surface is not None:
@@ -264,6 +266,19 @@ class IndicatorWindow(Gtk.Window):
     # ------------------------------------------------------------------
     # History panel
     # ------------------------------------------------------------------
+
+    def get_xid(self) -> int:
+        """Return the X11 window ID of this indicator window (0 if unavailable)."""
+        surface = self.get_surface()
+        if surface is None:
+            return 0
+        try:
+            from gi.repository import GdkX11
+            if isinstance(surface, GdkX11.X11Surface):
+                return surface.get_xid()
+        except (ImportError, AttributeError):
+            pass
+        return 0
 
     def _on_history_clicked(self, button: Gtk.Button) -> None:
         from bytecli.indicator.history_panel import HistoryPanel

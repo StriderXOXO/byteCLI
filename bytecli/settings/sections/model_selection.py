@@ -46,20 +46,23 @@ class ModelSelectionSection(Gtk.Box):
         self._previous_model: Optional[str] = None
 
         self._card = SectionCard(
-            title=i18n.t("settings.model.title", fallback="Model Selection")
+            title=i18n.t("model.label", fallback="Model Selection")
         )
+
+        # i18n keys for model display names and descriptions.
+        _model_i18n = {
+            "tiny": ("model.fast", "model.fast_desc"),
+            "small": ("model.balanced", "model.balanced_desc"),
+            "medium": ("model.accurate", "model.accurate_desc"),
+        }
 
         self._radios: dict[str, RadioOption] = {}
         for key in _MODEL_ORDER:
             meta = WHISPER_MODELS[key]
-            display = meta["display_name"]
-            size = meta["size"]
+            name_key, desc_key = _model_i18n[key]
+            display = i18n.t(name_key, fallback=meta["display_name"])
+            desc = i18n.t(desc_key, fallback=meta["size"])
             is_recommended = key == "small"
-            desc = (
-                i18n.t("settings.model.recommended", fallback="Recommended")
-                if is_recommended
-                else size
-            )
 
             radio = RadioOption(
                 label_text=display,
@@ -162,5 +165,5 @@ class ModelSelectionSection(Gtk.Box):
 
     def refresh_labels(self) -> None:
         self._card.set_title(
-            i18n.t("settings.model.title", fallback="Model Selection")
+            i18n.t("model.label", fallback="Model Selection")
         )

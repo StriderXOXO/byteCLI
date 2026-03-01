@@ -46,7 +46,7 @@ class ServerStatusSection(Gtk.Box):
         self._model_name = ""
 
         self._card = SectionCard(
-            title=i18n.t("settings.server_status.title", fallback="Server Status")
+            title=i18n.t("server.label", fallback="Server Status")
         )
 
         # --- Top row: dot + status text + action buttons -----------------
@@ -72,7 +72,7 @@ class ServerStatusSection(Gtk.Box):
         self._btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
 
         self._stop_btn = StyledButton(
-            label=i18n.t("settings.server_status.stop", fallback="Stop"),
+            label=i18n.t("server.btn_stop", fallback="Stop"),
             variant="secondary",
         )
         self._stop_btn.add_css_class("btn-sm")
@@ -80,7 +80,7 @@ class ServerStatusSection(Gtk.Box):
         self._btn_box.append(self._stop_btn)
 
         self._restart_btn = StyledButton(
-            label=i18n.t("settings.server_status.restart", fallback="Restart"),
+            label=i18n.t("server.btn_restart", fallback="Restart"),
             variant="secondary",
         )
         self._restart_btn.add_css_class("btn-sm")
@@ -88,7 +88,7 @@ class ServerStatusSection(Gtk.Box):
         self._btn_box.append(self._restart_btn)
 
         self._start_btn = StyledButton(
-            label=i18n.t("settings.server_status.start", fallback="Start"),
+            label=i18n.t("server.btn_start", fallback="Start"),
             variant="primary",
         )
         self._start_btn.add_css_class("btn-sm")
@@ -118,7 +118,7 @@ class ServerStatusSection(Gtk.Box):
 
         hint = Gtk.Label(
             label=i18n.t(
-                "settings.server_status.indicator_hint",
+                "server.refresh_hint",
                 fallback="Floating indicator disappeared?",
             )
         )
@@ -130,7 +130,7 @@ class ServerStatusSection(Gtk.Box):
 
         self._refresh_btn = StyledButton(
             label=i18n.t(
-                "settings.server_status.refresh_indicator",
+                "server.btn_refresh",
                 fallback="Refresh Indicator",
             ),
             variant="secondary",
@@ -285,7 +285,7 @@ class ServerStatusSection(Gtk.Box):
 
     def refresh_labels(self) -> None:
         self._card.set_title(
-            i18n.t("settings.server_status.title", fallback="Server Status")
+            i18n.t("server.label", fallback="Server Status")
         )
         # Re-render the current state to refresh status text.
         self._set_state(self._current_state, model=self._model_name)

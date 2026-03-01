@@ -95,7 +95,6 @@ DEFAULT_CONFIG: dict = {
     "device": "gpu",
     "audio_input": "auto",
     "hotkey": {
-        "mode": "double",
         "keys": ["Ctrl", "Alt", "V"],
     },
     "language": "en",

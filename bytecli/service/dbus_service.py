@@ -149,37 +149,6 @@ class ByteCLIDBusService(dbus.service.Object):
         )
 
     @dbus.service.method(
-        DBUS_INTERFACE, in_signature="as", out_signature="(bs)"
-    )
-    def SetHotkey(self, keys: List[str]) -> Tuple[bool, str]:
-        """Register a new global hotkey combination.
-
-        Returns ``(success, conflict_info)``.
-        """
-        logger.info("D-Bus SetHotkey(%r) called.", keys)
-        keys_list = [str(k) for k in keys]
-
-        # Check for conflicts first.
-        conflict = self._hotkey.check_conflict(keys_list)
-        if conflict is not None:
-            logger.warning("Hotkey conflict with: %s", conflict)
-            return (False, conflict)
-
-        try:
-            self._hotkey.unregister()
-            self._hotkey.register(keys_list)
-
-            # Persist to config.
-            cfg = self._config.config
-            cfg["hotkey"]["keys"] = keys_list
-            self._config.save(cfg)
-
-            return (True, "")
-        except Exception as exc:
-            logger.error("SetHotkey failed: %s", exc)
-            return (False, str(exc))
-
-    @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="a(sss)"
     )
     def GetHistory(self) -> List[Tuple[str, str, str]]:

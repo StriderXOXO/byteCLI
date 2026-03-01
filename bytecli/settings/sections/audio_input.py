@@ -55,7 +55,7 @@ class AudioInputSection(Gtk.Box):
         self._suppress_signal = False
 
         self._card = SectionCard(
-            title=i18n.t("settings.audio.title", fallback="Audio Input")
+            title=i18n.t("audio.label", fallback="Audio Input")
         )
 
         # --- Dropdown row ---
@@ -77,7 +77,7 @@ class AudioInputSection(Gtk.Box):
         self._error_box.append(error_icon)
 
         self._error_label = Gtk.Label(
-            label=i18n.t("settings.audio.no_devices", fallback="No devices detected")
+            label=i18n.t("audio.no_devices", fallback="No devices detected")
         )
         self._error_label.add_css_class("text-error")
         self._error_label.add_css_class("text-sm")
@@ -89,7 +89,7 @@ class AudioInputSection(Gtk.Box):
         # Hint text below the error.
         self._hint_label = Gtk.Label(
             label=i18n.t(
-                "settings.audio.hint",
+                "audio.no_devices_hint",
                 fallback="Connect a microphone and restart the service.",
             )
         )
@@ -140,7 +140,7 @@ class AudioInputSection(Gtk.Box):
             self._string_list.remove(0)
 
         # "Auto" is always the first entry.
-        auto_label = i18n.t("settings.audio.auto", fallback="Auto (System Default)")
+        auto_label = i18n.t("audio.auto", fallback="Auto (System Default)")
         self._string_list.append(auto_label)
 
         for _dev_id, dev_name in self._devices:
@@ -212,14 +212,14 @@ class AudioInputSection(Gtk.Box):
 
     def refresh_labels(self) -> None:
         self._card.set_title(
-            i18n.t("settings.audio.title", fallback="Audio Input")
+            i18n.t("audio.label", fallback="Audio Input")
         )
         self._error_label.set_text(
-            i18n.t("settings.audio.no_devices", fallback="No devices detected")
+            i18n.t("audio.no_devices", fallback="No devices detected")
         )
         self._hint_label.set_text(
             i18n.t(
-                "settings.audio.hint",
+                "audio.no_devices_hint",
                 fallback="Connect a microphone and restart the service.",
             )
         )
