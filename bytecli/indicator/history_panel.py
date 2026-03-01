@@ -391,7 +391,12 @@ class HistoryPanel(Gtk.Window):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            proc.communicate(input=text.encode("utf-8"))
+            proc.communicate(input=text.encode("utf-8"), timeout=5)
+        except subprocess.TimeoutExpired:
+            logger.warning("xclip timed out; killing process.")
+            proc.kill()
+            proc.wait()
+            return
         except FileNotFoundError:
             logger.warning("xclip not found; cannot copy to clipboard.")
             return

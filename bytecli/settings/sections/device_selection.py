@@ -49,6 +49,8 @@ class DeviceSelectionSection(Gtk.Box):
         self._switching = False
         self._previous_device: Optional[str] = None
         self._has_cuda = _cuda_available()
+        self._restore_timeout_id: Optional[int] = None
+        self._switch_timeout_id: Optional[int] = None
 
         self._card = SectionCard(
             title=i18n.t("device.label", fallback="Device")
@@ -124,35 +126,54 @@ class DeviceSelectionSection(Gtk.Box):
         active_radio.show_spinner()
         other_radio.disabled = True
 
-        import json
-        from gi.repository import GLib as _GLib
-
-        params = _GLib.Variant("(s)", (json.dumps({"device": device}),))
+        params = GLib.Variant("(s)", (device,))
         self._dbus_client._call_async(
             "SwitchDevice", parameters=params, callback=self._on_switch_result
         )
+        # Safety timeout in case the service crashes mid-switch.
+        self._switch_timeout_id = GLib.timeout_add(65000, self._on_switch_timeout)
 
     def _on_switch_result(self, result) -> None:
+        if self._switch_timeout_id is not None:
+            GLib.source_remove(self._switch_timeout_id)
+            self._switch_timeout_id = None
         self._switching = False
         if result is not None:
             current = self._config.get("device", "cpu")
             radio = self._gpu_radio if current == "gpu" else self._cpu_radio
             radio.show_checkmark(2000)
         else:
-            current = self._config.get("device", "cpu")
-            radio = self._gpu_radio if current == "gpu" else self._cpu_radio
-            radio.show_x_mark()
-            if self._previous_device:
-                self._config["device"] = self._previous_device
-                self._apply_selection(self._previous_device)
-                self._on_changed()
+            self._revert_device()
 
-        GLib.timeout_add(2000, self._restore_ui)
+        if self._restore_timeout_id is not None:
+            GLib.source_remove(self._restore_timeout_id)
+        self._restore_timeout_id = GLib.timeout_add(2000, self._restore_ui)
+
+    def _on_switch_timeout(self) -> bool:
+        self._switch_timeout_id = None
+        if self._switching:
+            logger.warning("Device switch timed out in settings UI.")
+            self._switching = False
+            self._revert_device()
+            if self._restore_timeout_id is not None:
+                GLib.source_remove(self._restore_timeout_id)
+            self._restore_timeout_id = GLib.timeout_add(2000, self._restore_ui)
+        return False
+
+    def _revert_device(self) -> None:
+        current = self._config.get("device", "cpu")
+        radio = self._gpu_radio if current == "gpu" else self._cpu_radio
+        radio.show_x_mark()
+        if self._previous_device:
+            self._config["device"] = self._previous_device
+            self._apply_selection(self._previous_device)
+            self._on_changed()
 
     def _on_switch_progress(self, conn, sender, path, iface, signal_name, params) -> None:
         pass
 
     def _restore_ui(self) -> bool:
+        self._restore_timeout_id = None
         self._gpu_radio.disabled = not self._has_cuda
         self._cpu_radio.disabled = False
         self._gpu_radio._clear_status()

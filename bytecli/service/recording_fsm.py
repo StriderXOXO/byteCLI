@@ -83,6 +83,11 @@ class RecordingFSM:
     def state(self) -> RecordingState:
         return self._state
 
+    def shutdown(self) -> None:
+        """Cancel pending timers and shut down the thread pool."""
+        self._cancel_auto_stop()
+        self._pool.shutdown(wait=False, cancel_futures=True)
+
     # ------------------------------------------------------------------
     # Hotkey callbacks (called from GLib main loop via idle_add)
     # ------------------------------------------------------------------
@@ -99,6 +104,9 @@ class RecordingFSM:
         - **TRANSCRIBING**: ignored (transcription already in progress).
         """
         if self._state is RecordingState.IDLE:
+            if not self._engine.is_loaded:
+                logger.info("Hotkey ignored -- model is still loading.")
+                return
             self._start_recording()
         elif self._state is RecordingState.RECORDING:
             self._stop_recording()

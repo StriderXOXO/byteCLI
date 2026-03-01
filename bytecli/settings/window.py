@@ -54,11 +54,12 @@ class SettingsWindow(Adw.ApplicationWindow):
 
         # D-Bus client.
         self._dbus_client = DBusClient()
-        self._dbus_client.connect()
+        self._dbus_connected = self._dbus_client.connect()
 
         # Configuration state.
         self._config: dict[str, Any] = copy.deepcopy(DEFAULT_CONFIG)
         self._config_snapshot: dict[str, Any] = copy.deepcopy(DEFAULT_CONFIG)
+        self._config_loaded_from_service = False
         self._load_config()
 
         # Build the UI.
@@ -149,6 +150,15 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._overlay.set_child(self._content_box)
         self.set_content(self._overlay)
 
+        # If config couldn't be loaded from service, disable Save and warn.
+        if not self._config_loaded_from_service:
+            self._save_btn.set_disabled(True)
+            GLib.idle_add(
+                self._toast_overlay.show_toast,
+                i18n.t("toast.service_unreachable", fallback="Service unreachable – settings are read-only"),
+                "error",
+            )
+
     # ------------------------------------------------------------------
     # Configuration
     # ------------------------------------------------------------------
@@ -158,9 +168,11 @@ class SettingsWindow(Adw.ApplicationWindow):
         remote = self._dbus_client.get_config()
         if remote is not None:
             self._config = remote
+            self._config_loaded_from_service = True
         else:
             logger.warning("Could not load remote config; using defaults.")
             self._config = copy.deepcopy(DEFAULT_CONFIG)
+            self._config_loaded_from_service = False
         self._config_snapshot = copy.deepcopy(self._config)
 
     def _on_config_value_changed(self) -> None:
@@ -170,7 +182,10 @@ class SettingsWindow(Adw.ApplicationWindow):
     def _update_save_cancel(self) -> None:
         """Enable Save/Cancel only when live config differs from snapshot."""
         changed = self._config != self._config_snapshot
-        self._save_btn.set_disabled(not changed)
+        # Never allow saving if config wasn't loaded from the service,
+        # as we'd overwrite live config with defaults.
+        can_save = changed and self._config_loaded_from_service
+        self._save_btn.set_disabled(not can_save)
         self._cancel_btn.set_disabled(not changed)
 
     # ------------------------------------------------------------------

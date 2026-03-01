@@ -107,9 +107,9 @@ systemctl --user daemon-reload
 success "systemd user daemon reloaded"
 
 # ----------------------------------------------------------------
-# 6. Install desktop entry
+# 6. Install desktop entries
 # ----------------------------------------------------------------
-step "Installing desktop entry"
+step "Installing desktop entries"
 
 APPS_DIR="${HOME}/.local/share/applications"
 mkdir -p "${APPS_DIR}"
@@ -117,17 +117,42 @@ mkdir -p "${APPS_DIR}"
 cp "${PROJECT_DIR}/desktop/bytecli-settings.desktop" "${APPS_DIR}/bytecli-settings.desktop"
 success "Copied bytecli-settings.desktop to ${APPS_DIR}"
 
+# Install autostart entry so ByteCLI starts on login.
+AUTOSTART_DIR="${HOME}/.config/autostart"
+mkdir -p "${AUTOSTART_DIR}"
+
+cp "${PROJECT_DIR}/desktop/bytecli.desktop" "${AUTOSTART_DIR}/bytecli.desktop"
+success "Copied bytecli.desktop to ${AUTOSTART_DIR} (auto-start on login)"
+
 # ----------------------------------------------------------------
-# 7. Done
+# 7. Enable and start the service
+# ----------------------------------------------------------------
+step "Starting ByteCLI service"
+
+systemctl --user enable bytecli
+success "Service enabled (will start on login)"
+
+systemctl --user start bytecli
+sleep 2
+
+if systemctl --user is-active bytecli >/dev/null 2>&1; then
+    success "ByteCLI service is running!"
+else
+    warn "Service started but may still be downloading the model..."
+    warn "Check status with: systemctl --user status bytecli"
+fi
+
+# ----------------------------------------------------------------
+# 8. Done
 # ----------------------------------------------------------------
 echo ""
 echo -e "${GREEN}${BOLD}========================================${NC}"
 echo -e "${GREEN}${BOLD}  ByteCLI installed successfully!${NC}"
 echo -e "${GREEN}${BOLD}========================================${NC}"
 echo ""
-echo -e "Next steps:"
-echo -e "  ${CYAN}1.${NC} Start the service:     ${BOLD}systemctl --user start bytecli${NC}"
-echo -e "  ${CYAN}2.${NC} Enable on login:        ${BOLD}systemctl --user enable bytecli${NC}"
-echo -e "  ${CYAN}3.${NC} Check service status:   ${BOLD}systemctl --user status bytecli${NC}"
-echo -e "  ${CYAN}4.${NC} Open settings:          ${BOLD}bytecli-settings${NC}"
+echo -e "ByteCLI is running! Look for the indicator at the bottom of your screen."
+echo ""
+echo -e "  ${CYAN}*${NC} Press ${BOLD}Ctrl+Alt+V${NC} to start dictating."
+echo -e "  ${CYAN}*${NC} Open Settings from your application menu: ${BOLD}ByteCLI Settings${NC}"
+echo -e "  ${CYAN}*${NC} Check service status: ${BOLD}systemctl --user status bytecli${NC}"
 echo ""

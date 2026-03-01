@@ -41,6 +41,7 @@ class IndicatorWindow(Gtk.Window):
         super().__init__(application=application)
         self._dbus_client = dbus_client
         self._recording = False
+        self._downloading = False
         self._timer_seconds = 0
         self._timer_source_id: Optional[int] = None
         self._leave_timeout_id: Optional[int] = None
@@ -144,6 +145,8 @@ class IndicatorWindow(Gtk.Window):
         """Draw a filled circle as the status dot."""
         if self._recording:
             cr.set_source_rgba(0.714, 1.0, 0.808, 1.0)  # #B6FFCE
+        elif self._downloading:
+            cr.set_source_rgba(1.0, 0.518, 0.0, 1.0)    # #FF8400 (warning orange)
         else:
             cr.set_source_rgba(0.722, 0.725, 0.714, 1.0)  # #B8B9B6
         radius = min(width, height) / 2.0
@@ -306,8 +309,26 @@ class IndicatorWindow(Gtk.Window):
 
     def set_state_idle(self) -> None:
         self._recording = False
+        self._downloading = False
         self._stop_timer()
         self._status_label.set_text(i18n.t("indicator.idle", fallback="Idle"))
+        self._timer_label.set_visible(False)
+        self._dot.queue_draw()
+
+    def set_state_downloading(self, percent: int, message: str) -> None:
+        """Show model download progress in the pill."""
+        self._recording = False
+        self._downloading = True
+        self._stop_timer()
+
+        if percent < 0:
+            # Error state.
+            self._status_label.set_text("Download failed")
+        elif percent < 100:
+            self._status_label.set_text(f"Downloading... {percent}%")
+        else:
+            self._status_label.set_text("Loading model...")
+
         self._timer_label.set_visible(False)
         self._dot.queue_draw()
 

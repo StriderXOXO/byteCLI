@@ -117,14 +117,27 @@ class HistoryManager:
     # ------------------------------------------------------------------
 
     def _persist(self) -> None:
-        """Write the current entries list to disk."""
-        os.makedirs(os.path.dirname(self._history_file), exist_ok=True)
+        """Atomically write the current entries list to disk."""
+        import tempfile
+
+        dir_name = os.path.dirname(self._history_file)
+        os.makedirs(dir_name, exist_ok=True)
+        tmp_path = None
         try:
-            with open(self._history_file, "w", encoding="utf-8") as fh:
+            fd, tmp_path = tempfile.mkstemp(
+                suffix=".tmp", prefix="history_", dir=dir_name
+            )
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 json.dump(self._entries, fh, indent=2, ensure_ascii=False)
                 fh.write("\n")
+            os.replace(tmp_path, self._history_file)
         except OSError as exc:
             logger.error("Failed to persist history: %s", exc)
+            if tmp_path is not None and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
     def _backup_and_clear(self) -> None:
         bak = self._history_file + ".bak"

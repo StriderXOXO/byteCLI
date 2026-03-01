@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+case "$1" in
+  remove|purge)
+    systemctl --global disable bytecli.service 2>/dev/null || true
+    if [ -n "$SUDO_USER" ]; then
+        SUDO_UID=$(id -u "$SUDO_USER")
+        if [ -d "/run/user/$SUDO_UID" ]; then
+            su - "$SUDO_USER" -c "systemctl --user stop bytecli.service" 2>/dev/null || true
+        fi
+    fi
+    ;;
+esac
+
+exit 0

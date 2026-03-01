@@ -2,21 +2,41 @@
 Whisper speech-recognition engine wrapper.
 
 Loads / unloads OpenAI Whisper models and performs thread-safe transcription
-of 16 kHz float32 numpy audio arrays.
+of 16 kHz float32 numpy audio arrays.  Supports progress-reporting during
+first-run model downloads.
 """
 
 from __future__ import annotations
 
 import gc
+import hashlib
 import logging
+import os
 import threading
-from typing import Optional
+import urllib.request
+from typing import Callable, Optional
 
 import numpy as np
 
-from bytecli.constants import MODEL_DIR
+from bytecli.constants import MODEL_DIR, WHISPER_MODELS
 
 logger = logging.getLogger(__name__)
+
+# Whisper model download URLs (from openai/whisper source).
+_WHISPER_MODEL_URLS: dict[str, str] = {
+    "tiny": "https://openaipublic.azureedge.net/main/whisper/models/65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9/tiny.pt",
+    "base": "https://openaipublic.azureedge.net/main/whisper/models/ed3a0b6b1c0edf879ad9b11b1af5a0e6ab5db9205f891f668f8b0e6c6326e34e/base.pt",
+    "small": "https://openaipublic.azureedge.net/main/whisper/models/9ecf779972d90ba49c06d968637d720dd632c55bbf19d441fb42bf17a411e794/small.pt",
+    "medium": "https://openaipublic.azureedge.net/main/whisper/models/345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1/medium.pt",
+}
+
+# Expected SHA256 hashes (from openai/whisper source).
+_WHISPER_MODEL_HASHES: dict[str, str] = {
+    "tiny": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9",
+    "base": "ed3a0b6b1c0edf879ad9b11b1af5a0e6ab5db9205f891f668f8b0e6c6326e34e",
+    "small": "9ecf779972d90ba49c06d968637d720dd632c55bbf19d441fb42bf17a411e794",
+    "medium": "345ae4da62f9b3d59415adc60127b97c714f32e89e936602e85993674d08dcb1",
+}
 
 
 class WhisperEngine:
@@ -27,6 +47,7 @@ class WhisperEngine:
         self._current_model: Optional[str] = None
         self._current_device: Optional[str] = None
         self._lock = threading.Lock()
+        self._loading = False
 
     # ------------------------------------------------------------------
     # Properties
@@ -35,6 +56,10 @@ class WhisperEngine:
     @property
     def is_loaded(self) -> bool:
         return self._model is not None
+
+    @property
+    def is_loading(self) -> bool:
+        return self._loading
 
     @property
     def current_model(self) -> Optional[str]:
@@ -105,6 +130,139 @@ class WhisperEngine:
         self._current_model = model_name
         self._current_device = device
         logger.info("Model '%s' loaded successfully on '%s'.", model_name, device)
+
+    def _model_file_exists(self, model_name: str) -> bool:
+        """Check if the model file is already downloaded."""
+        model_path = os.path.join(MODEL_DIR, f"{model_name}.pt")
+        return os.path.isfile(model_path)
+
+    def _download_model_file(
+        self,
+        model_name: str,
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+    ) -> None:
+        """Pre-download the model file with progress reporting.
+
+        Parameters
+        ----------
+        model_name:
+            One of ``"tiny"``, ``"small"``, ``"medium"``.
+        progress_callback:
+            Called with (percent: int, message: str) during download.
+        """
+        if model_name not in _WHISPER_MODEL_URLS:
+            return  # Unknown model — let whisper.load_model handle it.
+
+        model_path = os.path.join(MODEL_DIR, f"{model_name}.pt")
+        if os.path.isfile(model_path):
+            logger.debug("Model file already exists: %s", model_path)
+            return
+
+        os.makedirs(MODEL_DIR, exist_ok=True)
+
+        url = _WHISPER_MODEL_URLS[model_name]
+        model_info = WHISPER_MODELS.get(model_name, {})
+        size_str = model_info.get("size", "unknown size")
+
+        if progress_callback:
+            progress_callback(0, f"Downloading {model_name} model ({size_str})...")
+
+        logger.info("Downloading model '%s' from %s ...", model_name, url)
+
+        tmp_path = model_path + ".part"
+        try:
+            response = urllib.request.urlopen(url)
+            total_size = int(response.headers.get("Content-Length", 0))
+            downloaded = 0
+            chunk_size = 1024 * 1024  # 1 MB chunks
+
+            sha256 = hashlib.sha256()
+
+            with open(tmp_path, "wb") as f:
+                while True:
+                    chunk = response.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    sha256.update(chunk)
+                    downloaded += len(chunk)
+
+                    if total_size > 0 and progress_callback:
+                        percent = min(int(downloaded * 100 / total_size), 99)
+                        mb_done = downloaded / (1024 * 1024)
+                        mb_total = total_size / (1024 * 1024)
+                        progress_callback(
+                            percent,
+                            f"Downloading... {mb_done:.0f}/{mb_total:.0f} MB",
+                        )
+
+            # Verify hash if available.
+            expected_hash = _WHISPER_MODEL_HASHES.get(model_name)
+            if expected_hash and sha256.hexdigest() != expected_hash:
+                os.remove(tmp_path)
+                raise RuntimeError(
+                    f"Model hash mismatch for '{model_name}'. "
+                    "Download may be corrupted."
+                )
+
+            os.rename(tmp_path, model_path)
+            logger.info("Model '%s' downloaded to %s", model_name, model_path)
+
+            if progress_callback:
+                progress_callback(100, "Download complete. Loading model...")
+
+        except Exception as exc:
+            # Clean up partial download.
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            logger.error("Model download failed: %s", exc)
+            raise
+
+    def load_model_async(
+        self,
+        model_name: str,
+        device: str = "cpu",
+        progress_callback: Optional[Callable[[int, str], None]] = None,
+        done_callback: Optional[Callable[[bool, str], None]] = None,
+    ) -> None:
+        """Load a Whisper model in a background thread with progress reporting.
+
+        Parameters
+        ----------
+        model_name:
+            One of ``"tiny"``, ``"small"``, ``"medium"``.
+        device:
+            ``"cpu"`` or ``"cuda"`` / ``"gpu"``.
+        progress_callback:
+            Called with (percent: int, message: str) during download/load.
+        done_callback:
+            Called with (success: bool, message: str) when loading finishes.
+        """
+        self._loading = True
+
+        def _worker():
+            try:
+                # Step 1: Download model file with progress (if needed).
+                needs_download = not self._model_file_exists(model_name)
+                if needs_download:
+                    self._download_model_file(model_name, progress_callback)
+                elif progress_callback:
+                    progress_callback(100, "Loading model...")
+
+                # Step 2: Load the model (this is fast if already downloaded).
+                self.load_model(model_name, device)
+
+                self._loading = False
+                if done_callback:
+                    done_callback(True, "Model loaded successfully.")
+            except Exception as exc:
+                self._loading = False
+                logger.error("Async model load failed: %s", exc)
+                if done_callback:
+                    done_callback(False, str(exc))
+
+        thread = threading.Thread(target=_worker, daemon=True, name="model-loader")
+        thread.start()
 
     def unload_model(self) -> None:
         """Release the current model and reclaim memory."""

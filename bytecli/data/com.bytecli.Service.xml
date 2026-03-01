@@ -77,6 +77,11 @@
       <arg name="transcription" type="s"/>
     </signal>
 
+    <signal name="ModelDownloadProgress">
+      <arg name="percent" type="i"/>
+      <arg name="message" type="s"/>
+    </signal>
+
     <signal name="AudioDeviceChanged">
       <arg name="devices" type="a(ss)"/>
     </signal>

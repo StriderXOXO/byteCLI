@@ -59,6 +59,7 @@ class IndicatorApp(Gtk.Application):
         self._dbus_client.subscribe_signal("StatusChanged", self._on_status_changed)
         self._dbus_client.subscribe_signal("RecordingStarted", self._on_recording_started)
         self._dbus_client.subscribe_signal("RecordingStopped", self._on_recording_stopped)
+        self._dbus_client.subscribe_signal("ModelDownloadProgress", self._on_model_download_progress)
 
         # Create the indicator window.
         from bytecli.indicator.window import IndicatorWindow
@@ -101,6 +102,24 @@ class IndicatorApp(Gtk.Application):
     ) -> None:
         if self._indicator_window is not None:
             self._indicator_window.set_state_idle()
+
+    def _on_model_download_progress(
+        self, connection, sender, path, iface, signal_name, params
+    ) -> None:
+        if self._indicator_window is None or params is None:
+            return
+        unpacked = params.unpack()
+        if len(unpacked) >= 2:
+            percent, message = int(unpacked[0]), str(unpacked[1])
+        else:
+            return
+        if percent >= 100 and message == "Ready":
+            self._indicator_window.set_state_idle()
+        elif percent < 0:
+            # Error state — show briefly then revert to idle.
+            self._indicator_window.set_state_downloading(-1, message)
+        else:
+            self._indicator_window.set_state_downloading(percent, message)
 
     # ------------------------------------------------------------------
     # Helpers

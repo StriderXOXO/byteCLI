@@ -1,7 +1,7 @@
 """
 CSS provider loader for ByteCLI.
 
-Reads ``data/bytecli.css`` and installs the stylesheet on the default
+Reads ``bytecli/data/bytecli.css`` and installs the stylesheet on the default
 GDK display so that all GTK 4 widgets in the process pick up the
 ByteCLI design tokens automatically.
 
@@ -18,13 +18,11 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Resolve the path to data/bytecli.css relative to the project root.
-# The project layout is:
-#   <root>/bytecli/shared/css_provider.py   <- this file
-#   <root>/data/bytecli.css                 <- target CSS
-_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-_PROJECT_ROOT = os.path.abspath(os.path.join(_THIS_DIR, os.pardir, os.pardir))
-_CSS_PATH = os.path.join(_PROJECT_ROOT, "data", "bytecli.css")
+# Resolve the path to bytecli/data/bytecli.css relative to the package root.
+# Works for both editable (pip install -e .) and non-editable installs.
+import bytecli as _bytecli_pkg
+
+_CSS_PATH = os.path.join(os.path.dirname(_bytecli_pkg.__file__), "data", "bytecli.css")
 
 
 def load_css() -> None:

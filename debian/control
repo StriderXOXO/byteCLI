@@ -1,0 +1,15 @@
+Package: bytecli
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.10), python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1,
+         python3-dbus, xclip, xdotool, x11-utils, libportaudio2, python3-numpy,
+         python3-pip
+Description: Local voice dictation for Linux, powered by OpenAI Whisper
+ Press Ctrl+Alt+V to record, release to transcribe and paste.
+ Runs entirely offline using OpenAI Whisper for speech recognition.
+ Features a floating indicator pill, dark GTK 4 settings panel,
+ and bilingual (English/Chinese) support.
+Maintainer: ByteCLI <noreply@github.com>
+Homepage: https://github.com/StriderXOXO/byteCLI

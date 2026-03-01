@@ -44,6 +44,8 @@ class ModelSelectionSection(Gtk.Box):
         self._on_changed = on_changed
         self._switching = False
         self._previous_model: Optional[str] = None
+        self._restore_timeout_id: Optional[int] = None
+        self._switch_timeout_id: Optional[int] = None
 
         self._card = SectionCard(
             title=i18n.t("model.label", fallback="Model Selection")
@@ -104,6 +106,8 @@ class ModelSelectionSection(Gtk.Box):
         self._switching = True
         self._set_switching_ui(key)
         self._dbus_client.switch_model(key, callback=self._on_switch_result)
+        # Safety timeout in case the service crashes mid-switch.
+        self._switch_timeout_id = GLib.timeout_add(65000, self._on_switch_timeout)
 
     def _set_switching_ui(self, active_key: str) -> None:
         for key, radio in self._radios.items():
@@ -113,21 +117,34 @@ class ModelSelectionSection(Gtk.Box):
             else:
                 radio.disabled = True
 
-    def _restore_ui(self) -> None:
+    def _restore_ui(self) -> bool:
+        self._restore_timeout_id = None
         for radio in self._radios.values():
             radio.disabled = False
             radio._clear_status()
+        return False
 
     # ------------------------------------------------------------------
     # D-Bus callbacks
     # ------------------------------------------------------------------
 
     def _on_switch_result(self, result) -> None:
+        if self._switch_timeout_id is not None:
+            GLib.source_remove(self._switch_timeout_id)
+            self._switch_timeout_id = None
         self._switching = False
         if result is not None:
             self._on_switch_success()
         else:
             self._on_switch_failed()
+
+    def _on_switch_timeout(self) -> bool:
+        self._switch_timeout_id = None
+        if self._switching:
+            logger.warning("Model switch timed out in settings UI.")
+            self._switching = False
+            self._on_switch_failed()
+        return False
 
     def _on_switch_progress(self, conn, sender, path, iface, signal_name, params) -> None:
         """Handle intermediate progress signals during model download."""
@@ -137,7 +154,7 @@ class ModelSelectionSection(Gtk.Box):
         current = self._config.get("model", "small")
         if current in self._radios:
             self._radios[current].show_checkmark(duration_ms=2000)
-        GLib.timeout_add(2000, self._restore_ui)
+        self._schedule_restore()
 
     def _on_switch_failed(self) -> None:
         current = self._config.get("model", "small")
@@ -150,7 +167,12 @@ class ModelSelectionSection(Gtk.Box):
             self._apply_selection(self._previous_model)
             self._on_changed()
 
-        GLib.timeout_add(2000, self._restore_ui)
+        self._schedule_restore()
+
+    def _schedule_restore(self) -> None:
+        if self._restore_timeout_id is not None:
+            GLib.source_remove(self._restore_timeout_id)
+        self._restore_timeout_id = GLib.timeout_add(2000, self._restore_ui)
 
     # ------------------------------------------------------------------
     # Config interface

@@ -7,3 +7,28 @@ build/
 .eggs/
 *.so
 .claude/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Runtime
+*.pid
+*.log
+
+# Build artifacts
+staging/
+*.deb
+
+# Model weights
+*.pt
+*.bin
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

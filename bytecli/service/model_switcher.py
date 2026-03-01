@@ -189,11 +189,14 @@ class ModelSwitcher:
         msg: str,
     ) -> None:
         """Cancel the timeout watchdog and reset internal state."""
-        if self._timeout_timer is not None:
-            self._timeout_timer.cancel()
+        timer = self._timeout_timer
+        if timer is not None:
+            timer.cancel()
             self._timeout_timer = None
 
         with self._lock:
+            if self._state is ModelSwitchState.IDLE:
+                return  # Already finished (timeout/worker race).
             self._state = ModelSwitchState.IDLE
 
         try:

@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+case "$1" in
+  configure)
+    # Install Whisper via pip (not available in apt)
+    echo "ByteCLI: Installing speech recognition engine (openai-whisper + PyTorch)..."
+    echo "ByteCLI: This may take several minutes on first install."
+    pip3 install --break-system-packages openai-whisper 2>/dev/null || \
+    pip3 install openai-whisper 2>/dev/null || true
+
+    # Enable the user service globally (for all users, on next login)
+    systemctl --global enable bytecli.service 2>/dev/null || true
+
+    # Immediate start for the user who ran sudo
+    if [ -n "$SUDO_USER" ]; then
+        SUDO_UID=$(id -u "$SUDO_USER")
+        if [ -d "/run/user/$SUDO_UID" ]; then
+            su - "$SUDO_USER" -c \
+              "systemctl --user daemon-reload && systemctl --user start bytecli.service" \
+              2>/dev/null || true
+        fi
+    fi
+    ;;
+esac
+
+exit 0

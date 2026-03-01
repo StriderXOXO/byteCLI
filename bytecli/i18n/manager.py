@@ -96,16 +96,16 @@ class I18nManager:
         self._current_language = lang
         logger.debug("Loaded %d strings for locale '%s'.", len(self._strings), lang)
 
-    def t(self, key: str, **kwargs: Any) -> str:
+    def t(self, key: str, fallback: str = "", **kwargs: Any) -> str:
         """Translate *key*, interpolating ``{name}`` placeholders with *kwargs*.
 
-        Returns the raw *key* if no translation is found, so missing strings
-        are immediately visible in the UI during development.
+        If *fallback* is provided and the key is missing, the fallback string
+        is returned instead of the raw key.
         """
         template = self._strings.get(key)
         if template is None:
             logger.debug("Missing i18n key: '%s' (lang=%s)", key, self._current_language)
-            return key
+            return fallback if fallback else key
 
         if kwargs:
             try:

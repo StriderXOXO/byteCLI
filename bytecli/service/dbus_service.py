@@ -131,7 +131,12 @@ class ByteCLIDBusService(dbus.service.Object):
     )
     def SwitchModel(self, model: str) -> bool:
         """Initiate an asynchronous model switch."""
+        from bytecli.constants import WHISPER_MODELS
+
         logger.info("D-Bus SwitchModel(%r) called.", model)
+        if model not in WHISPER_MODELS:
+            logger.warning("SwitchModel: invalid model '%s'.", model)
+            return False
         return self._switcher.switch_model(
             model,
             dbus_signal_callback=self.ModelSwitchProgress,
@@ -143,6 +148,9 @@ class ByteCLIDBusService(dbus.service.Object):
     def SwitchDevice(self, device: str) -> bool:
         """Initiate an asynchronous compute-device switch."""
         logger.info("D-Bus SwitchDevice(%r) called.", device)
+        if device not in ("gpu", "cpu"):
+            logger.warning("SwitchDevice: invalid device '%s'.", device)
+            return False
         return self._switcher.switch_device(
             device,
             dbus_signal_callback=self.DeviceSwitchProgress,
@@ -228,6 +236,11 @@ class ByteCLIDBusService(dbus.service.Object):
     def RecordingStopped(self, text: str) -> None:
         """Emitted when recording ends.  *text* is the transcription result."""
         logger.debug("Signal RecordingStopped(%r)", text[:80] if text else "")
+
+    @dbus.service.signal(DBUS_INTERFACE, signature="is")
+    def ModelDownloadProgress(self, percent: int, message: str) -> None:
+        """Emitted during first-run model download with progress updates."""
+        logger.debug("Signal ModelDownloadProgress(%d, %r)", percent, message)
 
     @dbus.service.signal(DBUS_INTERFACE, signature="a(ss)")
     def AudioDeviceChanged(self, devices: List[Tuple[str, str]]) -> None:

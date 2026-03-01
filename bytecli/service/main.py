@@ -124,7 +124,7 @@ def main() -> None:
     loop = GLib.MainLoop()
 
     try:
-        # 8. Create WhisperEngine and load model from config.
+        # 8. Create WhisperEngine (model loading is deferred).
         from bytecli.service.whisper_engine import WhisperEngine
 
         whisper_engine = WhisperEngine()
@@ -136,8 +136,6 @@ def main() -> None:
             cfg = config_manager.config
             cfg["device"] = "cpu"
             config_manager.save(cfg)
-
-        whisper_engine.load_model(config["model"], device)
 
         # 9. Create AudioManager.
         from bytecli.service.audio_manager import AudioManager
@@ -193,7 +191,14 @@ def main() -> None:
 
         # 15. Register the fixed Ctrl+Alt+V hotkey.
         hotkey_keys = ["Ctrl", "Alt", "V"]
-        hotkey_manager.register(hotkey_keys)
+        try:
+            hotkey_manager.register(hotkey_keys)
+        except Exception as exc:
+            logger.warning(
+                "Failed to register hotkey %s: %s. "
+                "Service will run but hotkey is unavailable.",
+                hotkey_keys, exc,
+            )
 
         # 16. Start audio hotplug monitor.
         def _on_devices_changed(devices):
@@ -205,8 +210,14 @@ def main() -> None:
         audio_manager.start_hotplug_monitor(_on_devices_changed)
 
         # 17. Set callbacks on dbus_service (stop, restart, indicator).
+        _shutting_down = False
+
         def _cleanup() -> None:
             """Release all resources held by the service."""
+            try:
+                recording_fsm.shutdown()
+            except Exception as exc:
+                logger.debug("RecordingFSM shutdown error: %s", exc)
             try:
                 hotkey_manager.unregister()
             except Exception as exc:
@@ -223,6 +234,10 @@ def main() -> None:
 
         def _stop_service() -> None:
             """Graceful stop: dispatch EVT_STOP, cleanup, EVT_SHUTDOWN_DONE, quit."""
+            nonlocal _shutting_down
+            if _shutting_down:
+                return
+            _shutting_down = True
             state_machine.dispatch(ServiceEvent.EVT_STOP)
             _cleanup()
             state_machine.dispatch(ServiceEvent.EVT_SHUTDOWN_DONE)
@@ -230,6 +245,10 @@ def main() -> None:
 
         def _restart_service() -> None:
             """Restart: dispatch EVT_RESTART, cleanup, EVT_SHUTDOWN_DONE, re-exec."""
+            nonlocal _shutting_down
+            if _shutting_down:
+                return
+            _shutting_down = True
             state_machine.dispatch(ServiceEvent.EVT_RESTART)
             _cleanup()
             state_machine.dispatch(ServiceEvent.EVT_SHUTDOWN_DONE)
@@ -246,9 +265,10 @@ def main() -> None:
         dbus_service.set_restart_callback(_restart_service)
         dbus_service.set_indicator_restart_callback(_refresh_indicator)
 
-        # 18. Dispatch EVT_INIT_SUCCESS.
+        # 18. Dispatch EVT_INIT_SUCCESS *before* model loading so the
+        #     indicator appears immediately and can show download progress.
         state_machine.dispatch(ServiceEvent.EVT_INIT_SUCCESS)
-        logger.info("Service initialised successfully -- entering main loop.")
+        logger.info("Service initialised -- entering main loop (model loading deferred).")
 
     except Exception as exc:
         logger.error("Service initialisation failed: %s", exc)
@@ -260,7 +280,61 @@ def main() -> None:
     _start_indicator()
 
     # ------------------------------------------------------------------
-    # 19. Signal handlers for graceful shutdown (SIGTERM / SIGINT)
+    # 19. Load Whisper model asynchronously with progress reporting
+    # ------------------------------------------------------------------
+    def _on_model_progress(percent: int, message: str) -> None:
+        """Forward download progress to D-Bus (runs on background thread)."""
+        try:
+            GLib.idle_add(dbus_service.ModelDownloadProgress, percent, message)
+        except Exception:
+            pass
+
+    def _on_model_done(success: bool, message: str) -> None:
+        """Handle model loading completion (runs on background thread)."""
+        def _notify_done():
+            if success:
+                logger.info("Whisper model loaded: %s", message)
+                try:
+                    dbus_service.ModelDownloadProgress(100, "Ready")
+                except Exception:
+                    pass
+                _send_notification(
+                    "ByteCLI is ready!",
+                    "Press Ctrl+Alt+V to dictate.",
+                )
+            else:
+                logger.error("Whisper model load failed: %s", message)
+                try:
+                    dbus_service.ModelDownloadProgress(-1, f"Failed: {message}")
+                except Exception:
+                    pass
+                _send_notification(
+                    "ByteCLI model load failed",
+                    message,
+                )
+            return False
+        GLib.idle_add(_notify_done)
+
+    # Send a notification if this is a first-run download.
+    if not whisper_engine._model_file_exists(config["model"]):
+        model_info = {}
+        from bytecli.constants import WHISPER_MODELS as _WM
+        model_info = _WM.get(config["model"], {})
+        size_str = model_info.get("size", "")
+        _send_notification(
+            "ByteCLI is downloading the speech model",
+            f"Downloading {config['model']} model ({size_str}). This may take a few minutes.",
+        )
+
+    whisper_engine.load_model_async(
+        config["model"],
+        device,
+        progress_callback=_on_model_progress,
+        done_callback=_on_model_done,
+    )
+
+    # ------------------------------------------------------------------
+    # 21. Signal handlers for graceful shutdown (SIGTERM / SIGINT)
     # ------------------------------------------------------------------
     def _signal_handler(signum, frame):
         sig_name = signal.Signals(signum).name
@@ -271,7 +345,7 @@ def main() -> None:
     signal.signal(signal.SIGINT, _signal_handler)
 
     # ------------------------------------------------------------------
-    # 20. Run GLib.MainLoop
+    # 22. Run GLib.MainLoop
     # ------------------------------------------------------------------
     try:
         loop.run()
@@ -319,6 +393,19 @@ def _kill_indicator() -> None:
         logger.debug("Could not kill indicator: %s", exc)
     finally:
         PidManager.cleanup(INDICATOR_PID_FILE)
+
+
+def _send_notification(title: str, body: str) -> None:
+    """Send a desktop notification via notify-send."""
+    try:
+        subprocess.Popen(
+            ["notify-send", "--app-name=ByteCLI", title, body],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
+        if logger:
+            logger.debug("notify-send not available; skipping notification.")
 
 
 if __name__ == "__main__":
