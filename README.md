@@ -41,7 +41,7 @@ $ byte --status
 sudo apt install ./bytecli_1.0.0_amd64.deb
 ```
 
-Download from [Releases](https://github.com/StriderXOXO/byteCLI/releases). The service starts automatically — look for the indicator pill at the bottom of your screen.
+Download from [Releases](https://github.com/StriderXOXO/byteCLI/releases). The service starts automatically — look for the indicator pill at the top of your screen.
 
 **Developer install:**
 
@@ -59,7 +59,7 @@ pip install -e .
 
 - **One hotkey to rule them all** — Ctrl+Alt+V. Hold to record, release to paste. Done.
 - **Your voice stays yours** — Runs entirely on your machine. Zero telemetry, zero cloud, zero API keys.
-- **Know what's happening** — A tiny pill at the bottom of your screen. Recording? You'll see it. Downloading model? Progress right there.
+- **Know what's happening** — A tiny pill at the top of your screen. Recording? You'll see it. Downloading model? Progress right there.
 - **Fast enough to not think about it** — CUDA GPU support for ~200ms response. CPU works too.
 - **你好, world** — English and Chinese out of the box.
 - **Choose your tradeoff** — Tiny (75 MB, instant) → Small (465 MB, balanced) → Medium (1.5 GB, accurate).
@@ -90,7 +90,7 @@ Three processes, one D-Bus:
 ```
 
 - **bytecli-service** — systemd user service that loads the Whisper model, listens for the global hotkey, records audio, transcribes, and pastes text via xdotool/xclip
-- **bytecli-indicator** — floating pill-shaped GTK 4 window pinned to the bottom-center of the screen showing idle/recording state with an elapsed timer
+- **bytecli-indicator** — floating pill-shaped GTK 4 window pinned to the top of the screen showing idle/recording state with an elapsed timer
 - **bytecli-settings** — dark GTK 4 settings app for model selection, audio device, hotkey configuration, and service control
 
 ## Configuration

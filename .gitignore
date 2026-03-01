@@ -32,3 +32,7 @@ staging/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Project-specific
+ByteCLI_Developer_PRD.md
+byte_design_relive.pen
