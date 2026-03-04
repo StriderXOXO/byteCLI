@@ -35,7 +35,7 @@ $ byte --status
 
 ## Quick Install
 
-**Ubuntu / Debian (.deb):**
+**Ubuntu 22.04+ (.deb):**
 
 ```bash
 sudo apt install ./bytecli_1.1.0_amd64.deb
@@ -43,7 +43,7 @@ sudo apt install ./bytecli_1.1.0_amd64.deb
 
 Download from [Releases](https://github.com/StriderXOXO/byteCLI/releases). The service starts automatically — look for the indicator pill at the top of your screen.
 
-**Developer install:**
+**Developer install (22.04+):**
 
 ```bash
 sudo apt install xclip xdotool portaudio19-dev python3-gi gir1.2-gtk-4.0
@@ -53,7 +53,17 @@ pip install -e .
 ./scripts/install.sh
 ```
 
-> Requires **Ubuntu 22.04+**, **X11** session (Wayland has limited support), **Python 3.10+**, and a microphone.
+> Requires **X11** session (Wayland has limited support) and a microphone.
+
+### Ubuntu 20.04 Users
+
+The `.deb` package requires GTK 4 and libadwaita, which are **not available** in the Ubuntu 20.04 repositories. If you are on 20.04, please use the **Snap package** from [Releases](https://github.com/StriderXOXO/byteCLI/releases) instead:
+
+```bash
+sudo snap install bytecli_1.1.0_amd64.snap --dangerous --classic
+```
+
+The Snap package bundles its own GTK 4, libadwaita and Python 3.10+ runtime, so no additional system dependencies are needed. Alternatively, consider upgrading to Ubuntu 22.04 LTS for native `.deb` support.
 
 ## Features
 
