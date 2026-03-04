@@ -1,0 +1,63 @@
+name: bytecli
+version: '1.1.0'
+summary: Fast, privacy-first voice input for Linux
+description: |
+  Hold Ctrl+Alt+V, speak, release — text appears at cursor.
+  Powered by OpenAI Whisper. Runs 100% local. Zero cloud, zero telemetry.
+  All bark, all byte.
+base: core22
+confinement: classic
+grade: stable
+architectures:
+  - build-on: [amd64]
+
+apps:
+  bytecli-service:
+    command: bin/bytecli-launcher service
+    environment:
+      GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
+      LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.10/site-packages
+  bytecli-indicator:
+    command: bin/bytecli-launcher indicator
+    environment:
+      GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
+      LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.10/site-packages
+  bytecli-settings:
+    command: bin/bytecli-launcher settings
+    desktop: share/applications/bytecli-settings.desktop
+    environment:
+      GI_TYPELIB_PATH: $SNAP/usr/lib/x86_64-linux-gnu/girepository-1.0
+      LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$SNAP/lib/python3.10/site-packages
+
+parts:
+  launcher:
+    plugin: dump
+    source: snap/local
+    organize:
+      bytecli-launcher: bin/bytecli-launcher
+
+  bytecli:
+    plugin: python
+    source: .
+    python-packages:
+      - openai-whisper
+      - python-xlib
+      - sounddevice
+      - pulsectl
+      - numpy
+      - dbus-python
+    stage-packages:
+      - python3-gi
+      - gir1.2-gtk-4.0
+      - gir1.2-adw-1
+      - libgtk-4-1
+      - libadwaita-1-0
+      - xclip
+      - xdotool
+      - x11-utils
+      - libportaudio2
+      - libpulse0
+      - libnotify-bin

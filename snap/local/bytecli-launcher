@@ -1,0 +1,13 @@
+#!/bin/bash
+# ByteCLI Snap launcher — routes to the correct entry point.
+set -e
+
+case "$1" in
+  service)   exec "$SNAP/usr/bin/python3" -m bytecli.service.main ;;
+  indicator) exec "$SNAP/usr/bin/python3" -m bytecli.indicator.main ;;
+  settings)  exec "$SNAP/usr/bin/python3" -m bytecli.settings.main ;;
+  *)
+    echo "Usage: bytecli-launcher {service|indicator|settings}" >&2
+    exit 1
+    ;;
+esac

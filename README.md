@@ -9,7 +9,7 @@ Speak your code into existence. Zero cloud, all local.
 
 [![Website](https://img.shields.io/badge/Website-byte--cli.com-FF8400?style=flat-square)](https://byte-cli.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
-[![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-E95420?style=flat-square&logo=ubuntu&logoColor=white)](https://ubuntu.com)
+[![Ubuntu 20.04+](https://img.shields.io/badge/Ubuntu-20.04%2B-E95420?style=flat-square&logo=ubuntu&logoColor=white)](https://ubuntu.com)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Tests](https://img.shields.io/badge/Tests-94%20passed-B6FFCE?style=flat-square)](#)
 
@@ -35,7 +35,13 @@ $ byte --status
 
 ## Quick Install
 
-**Ubuntu / Debian (.deb):**
+**Snap (Ubuntu 20.04+):**
+
+```bash
+sudo snap install bytecli --classic
+```
+
+**Ubuntu / Debian (.deb, 22.04+):**
 
 ```bash
 sudo apt install ./bytecli_1.1.0_amd64.deb
@@ -53,7 +59,7 @@ pip install -e .
 ./scripts/install.sh
 ```
 
-> Requires **Ubuntu 22.04+**, **X11** session (Wayland has limited support), **Python 3.10+**, and a microphone.
+> Requires **Ubuntu 20.04+** (Snap) or **22.04+** (.deb), **X11** session (Wayland has limited support), and a microphone.
 
 ## Features
 
