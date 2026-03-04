@@ -73,6 +73,15 @@ class SettingsWindow(Adw.ApplicationWindow):
     # ------------------------------------------------------------------
 
     def _build_ui(self) -> None:
+        # Header bar -- provides the draggable titlebar and window controls.
+        self._header_bar = Adw.HeaderBar()
+        self._title_label = Gtk.Label(
+            label=i18n.t("panel.title", fallback="Voice Dictation Settings")
+        )
+        self._title_label.add_css_class("mono")
+        self._title_label.add_css_class("font-semibold")
+        self._header_bar.set_title_widget(self._title_label)
+
         # Overlay for in-window toasts.
         self._overlay = Gtk.Overlay()
         self._toast_overlay = SettingsToastOverlay(self._overlay)
@@ -81,18 +90,8 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
         self._content_box.set_margin_start(24)
         self._content_box.set_margin_end(24)
-        self._content_box.set_margin_top(24)
+        self._content_box.set_margin_top(16)
         self._content_box.set_margin_bottom(24)
-
-        # Title.
-        self._title_label = Gtk.Label(
-            label=i18n.t("panel.title", fallback="Voice Dictation Settings")
-        )
-        self._title_label.add_css_class("mono")
-        self._title_label.add_css_class("font-semibold")
-        self._title_label.add_css_class("text-xl")
-        self._title_label.set_halign(Gtk.Align.START)
-        self._content_box.append(self._title_label)
 
         # --- Sections ---
         self._server_section = ServerStatusSection(self._dbus_client)
@@ -148,7 +147,12 @@ class SettingsWindow(Adw.ApplicationWindow):
         self._content_box.append(btn_row)
 
         self._overlay.set_child(self._content_box)
-        self.set_content(self._overlay)
+
+        # Wrap header bar + overlay in a vertical box.
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        main_box.append(self._header_bar)
+        main_box.append(self._overlay)
+        self.set_content(main_box)
 
         # If config couldn't be loaded from service, disable Save and warn.
         if not self._config_loaded_from_service:
@@ -261,6 +265,11 @@ class SettingsWindow(Adw.ApplicationWindow):
             "  background-color: #1A1A1A;"
             "  border-radius: 16px;"
             "  border: 1px solid #2E2E2E;"
+            "}"
+            "headerbar {"
+            "  background-color: #1A1A1A;"
+            "  border-bottom: 1px solid #2E2E2E;"
+            "  box-shadow: none;"
             "}"
         )
         provider.load_from_data(css.encode())

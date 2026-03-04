@@ -38,7 +38,7 @@ $ byte --status
 **Ubuntu / Debian (.deb):**
 
 ```bash
-sudo apt install ./bytecli_1.0.0_amd64.deb
+sudo apt install ./bytecli_1.1.0_amd64.deb
 ```
 
 Download from [Releases](https://github.com/StriderXOXO/byteCLI/releases). The service starts automatically — look for the indicator pill at the top of your screen.
