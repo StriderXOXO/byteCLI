@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 def type_text(text: str) -> Tuple[bool, bool]:
     """Paste *text* into the focused window via clipboard.
 
+    Tries ``Ctrl+V`` first (works in most GUI applications), then
+    falls back to ``Ctrl+Shift+V`` (terminal emulators).
+
     Returns
     -------
     (success, fallback_used) : tuple[bool, bool]
@@ -34,7 +37,10 @@ def type_text(text: str) -> Tuple[bool, bool]:
 
     # 2. Copy transcription to clipboard.
     if not _set_clipboard(text):
+        logger.error("Failed to write text to clipboard.")
         return (False, False)
+
+    logger.info("Text copied to clipboard (%d chars).", len(text))
 
     # 3. Explicitly release all modifier keys that may still be "held"
     #    from the X server's perspective due to XGrabKey state.
@@ -48,22 +54,25 @@ def type_text(text: str) -> Tuple[bool, bool]:
 
     time.sleep(0.05)
 
-    # 4. Paste via Ctrl+Shift+V (works in both terminals and GUI apps).
-    paste_key = "ctrl+shift+v"
-
-    try:
-        subprocess.run(
-            ["xdotool", "key", "--clearmodifiers", paste_key],
-            check=True,
-            timeout=5,
-        )
-        logger.debug(
-            "Text pasted via %s (%d chars).", paste_key, len(text)
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError,
-            subprocess.TimeoutExpired) as exc:
-        logger.warning("xdotool key %s failed: %s", paste_key, exc)
-        # Text is still on the clipboard — user can paste manually.
+    # 4. Try Ctrl+V first (universal for GUI apps), then Ctrl+Shift+V (terminals).
+    for paste_key in ("ctrl+v", "ctrl+shift+v"):
+        try:
+            subprocess.run(
+                ["xdotool", "key", "--clearmodifiers", paste_key],
+                check=True,
+                timeout=5,
+            )
+            logger.info(
+                "Text pasted via %s (%d chars).", paste_key, len(text)
+            )
+            break
+        except (subprocess.CalledProcessError, FileNotFoundError,
+                subprocess.TimeoutExpired) as exc:
+            logger.warning("xdotool key %s failed: %s", paste_key, exc)
+            continue
+    else:
+        # Both paste shortcuts failed — text is still on clipboard.
+        logger.warning("All paste shortcuts failed. Text left on clipboard.")
         return (True, True)
 
     # 5. Restore the original clipboard after a short delay.

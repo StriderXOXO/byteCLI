@@ -230,6 +230,8 @@ class RecordingFSM:
             logger.error("Failed to deliver text to focused window.")
         elif fallback:
             logger.info("Text delivered via clipboard fallback.")
+        else:
+            logger.info("Text delivered successfully.")
 
         # Persist to history.
         model = self._engine.current_model or "unknown"
@@ -239,6 +241,7 @@ class RecordingFSM:
         self._emit_stopped(text)
 
         self._state = RecordingState.IDLE
+        logger.info("Recording FSM → IDLE.")
         return False  # remove idle source
 
     def _on_no_speech(self) -> bool:
