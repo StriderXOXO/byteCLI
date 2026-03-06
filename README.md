@@ -45,10 +45,10 @@ sudo snap install bytecli --classic
 
 ```bash
 # Ubuntu 20.04 & 22.04+ — use the installer script (handles GTK4 PPA on 20.04):
-bash scripts/install-deb.sh bytecli_1.1.0_amd64.deb
+bash scripts/install-deb.sh bytecli_1.2.0_amd64.deb
 
 # Or on Ubuntu 22.04+, install directly:
-sudo apt install ./bytecli_1.1.0_amd64.deb
+sudo apt install ./bytecli_1.2.0_amd64.deb
 ```
 
 Download from [Releases](https://github.com/StriderXOXO/byteCLI/releases). The service starts automatically — look for the indicator pill at the top of your screen.

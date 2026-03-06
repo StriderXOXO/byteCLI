@@ -4,7 +4,7 @@
 # Builds a .deb package using dpkg-deb.
 #
 # Usage: ./scripts/build-deb.sh
-# Output: bytecli_1.1.0_amd64.deb in the project root
+# Output: bytecli_1.2.0_amd64.deb in the project root
 #
 
 set -euo pipefail
@@ -25,7 +25,7 @@ error()   { echo -e "${RED}[ERR]${NC}  $*"; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 PACKAGE_NAME="bytecli"
 DEB_NAME="${PACKAGE_NAME}_${VERSION}_amd64.deb"
 STAGING="${PROJECT_DIR}/staging"

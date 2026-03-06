@@ -7,7 +7,7 @@
 # default system repositories -- no PPA needed.
 #
 # Usage:
-#   ./scripts/install-deb.sh bytecli_1.1.0_amd64.deb
+#   ./scripts/install-deb.sh bytecli_1.2.0_amd64.deb
 #   ./scripts/install-deb.sh  # auto-detects .deb in current directory
 #
 
