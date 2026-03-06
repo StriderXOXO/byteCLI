@@ -1,8 +1,8 @@
 """
-ByteCLISettingsApp -- Adw.Application for the settings panel.
+ByteCLISettingsApp -- GTK 3 Application for the settings panel.
 
-Forces dark theme via Adw.StyleManager and loads the shared CSS
-stylesheet before presenting the main SettingsWindow.
+Applies dark theme via CSS and loads the shared CSS stylesheet
+before presenting the main SettingsWindow.
 """
 
 from __future__ import annotations
@@ -11,10 +11,9 @@ import logging
 
 import gi
 
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1")
+gi.require_version("Gtk", "3.0")
 
-from gi.repository import Adw, Gio
+from gi.repository import Gio, Gtk
 
 from bytecli.shared.css_provider import load_css
 from bytecli.shared.logging_setup import setup_logging
@@ -22,8 +21,8 @@ from bytecli.shared.logging_setup import setup_logging
 logger = setup_logging("bytecli.settings")
 
 
-class ByteCLISettingsApp(Adw.Application):
-    """Single-instance Adw application for the ByteCLI settings panel."""
+class ByteCLISettingsApp(Gtk.Application):
+    """Single-instance GTK 3 application for the ByteCLI settings panel."""
 
     def __init__(self) -> None:
         super().__init__(
@@ -32,10 +31,7 @@ class ByteCLISettingsApp(Adw.Application):
         )
 
     def do_activate(self) -> None:
-        # Force dark colour scheme.
-        style_manager = Adw.StyleManager.get_default()
-        style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
-
+        # Dark theme is applied entirely via CSS (bytecli.css).
         # Load shared CSS.
         load_css()
 
@@ -45,4 +41,5 @@ class ByteCLISettingsApp(Adw.Application):
             from bytecli.settings.window import SettingsWindow
 
             win = SettingsWindow(application=self)
+        win.show_all()
         win.present()

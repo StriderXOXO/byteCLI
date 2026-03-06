@@ -18,7 +18,7 @@ from typing import Any
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
 
@@ -61,29 +61,27 @@ class LanguageSelectSection(Gtk.Box):
                 fallback="Interface Language:",
             )
         )
-        self._row_label.add_css_class("text-base")
+        self._row_label.get_style_context().add_class("text-base")
         self._row_label.set_halign(Gtk.Align.START)
-        row.append(self._row_label)
+        row.pack_start(self._row_label, False, False, 0)
 
-        self._lang_list = Gtk.StringList()
-        for _code, display in _LANGUAGES:
-            self._lang_list.append(display)
-
-        self._dropdown = Gtk.DropDown(model=self._lang_list)
-        self._dropdown.add_css_class("dropdown-btn")
+        self._dropdown = Gtk.ComboBoxText()
+        self._dropdown.get_style_context().add_class("dropdown-btn")
         self._dropdown.set_hexpand(True)
-        self._dropdown.connect("notify::selected", self._on_selection_changed)
-        row.append(self._dropdown)
+        for _code, display in _LANGUAGES:
+            self._dropdown.append_text(display)
+        self._dropdown.connect("changed", self._on_selection_changed)
+        row.pack_start(self._dropdown, True, True, 0)
 
-        self._card.card_content.append(row)
-        self.append(self._card)
+        self._card.card_content.pack_start(row, False, False, 0)
+        self.pack_start(self._card, False, False, 0)
 
         # Set initial value from config.
         current_lang = config.get("language", "en")
         self._suppress_signal = True
         for idx, (code, _) in enumerate(_LANGUAGES):
             if code == current_lang:
-                self._dropdown.set_selected(idx)
+                self._dropdown.set_active(idx)
                 break
         self._suppress_signal = False
 
@@ -91,12 +89,12 @@ class LanguageSelectSection(Gtk.Box):
     # Selection handling
     # ------------------------------------------------------------------
 
-    def _on_selection_changed(self, dropdown, param) -> None:
+    def _on_selection_changed(self, combo) -> None:
         if self._suppress_signal:
             return
 
-        idx = dropdown.get_selected()
-        if idx == Gtk.INVALID_LIST_POSITION or idx >= len(_LANGUAGES):
+        idx = combo.get_active()
+        if idx < 0 or idx >= len(_LANGUAGES):
             return
 
         code, _ = _LANGUAGES[idx]

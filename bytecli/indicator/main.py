@@ -14,8 +14,8 @@ import sys
 
 import gi
 
-gi.require_version("Gtk", "4.0")
-gi.require_version("Gdk", "4.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 
 from gi.repository import GLib, Gtk
 
@@ -29,7 +29,7 @@ logger = setup_logging("bytecli.indicator")
 
 
 class IndicatorApp(Gtk.Application):
-    """GTK 4 application for the floating dictation indicator."""
+    """GTK 3 application for the floating dictation indicator."""
 
     def __init__(self) -> None:
         super().__init__(application_id="com.bytecli.Indicator")
@@ -65,6 +65,7 @@ class IndicatorApp(Gtk.Application):
         from bytecli.indicator.window import IndicatorWindow
 
         self._indicator_window = IndicatorWindow(application=self, dbus_client=self._dbus_client)
+        self._indicator_window.show_all()
         self._indicator_window.present()
 
         # Fetch initial status to set the correct state.

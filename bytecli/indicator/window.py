@@ -16,8 +16,8 @@ from typing import Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
-gi.require_version("Gdk", "4.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 
 from gi.repository import Gdk, GLib, Gtk
 
@@ -52,7 +52,6 @@ class IndicatorWindow(Gtk.Window):
         self.set_decorated(False)
         self.set_resizable(False)
         self.set_can_focus(False)
-        self.set_focusable(False)
         self.set_title("ByteCLI Indicator")
 
         # Build UI.
@@ -68,7 +67,7 @@ class IndicatorWindow(Gtk.Window):
     def _build_ui(self) -> None:
         # Root box with the pill CSS class.
         self._pill_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        self._pill_box.add_css_class("indicator-pill")
+        self._pill_box.get_style_context().add_class("indicator-pill")
         self._pill_box.set_margin_start(0)
         self._pill_box.set_margin_end(0)
 
@@ -76,60 +75,66 @@ class IndicatorWindow(Gtk.Window):
         self._dot = Gtk.DrawingArea()
         self._dot.set_size_request(8, 8)
         self._dot.set_valign(Gtk.Align.CENTER)
-        self._dot.set_draw_func(self._draw_dot)
-        self._pill_box.append(self._dot)
+        self._dot.connect("draw", self._draw_dot)
+        self._pill_box.pack_start(self._dot, False, False, 0)
 
         # --- Status text -------------------------------------------------
         self._status_label = Gtk.Label(label=i18n.t("indicator.idle", fallback="Idle"))
-        self._status_label.add_css_class("mono")
-        self._status_label.add_css_class("font-medium")
+        self._status_label.get_style_context().add_class("mono")
+        self._status_label.get_style_context().add_class("font-medium")
         self._status_label.set_valign(Gtk.Align.CENTER)
         # 13px via inline style
         _apply_font_size(self._status_label, 13)
-        self._pill_box.append(self._status_label)
+        self._pill_box.pack_start(self._status_label, False, False, 0)
 
         # --- Timer label (visible only while recording) ------------------
         self._timer_label = Gtk.Label(label="00:00")
-        self._timer_label.add_css_class("mono")
-        self._timer_label.add_css_class("text-muted")
+        self._timer_label.get_style_context().add_class("mono")
+        self._timer_label.get_style_context().add_class("text-muted")
         self._timer_label.set_valign(Gtk.Align.CENTER)
         _apply_font_size(self._timer_label, 13)
+        self._timer_label.set_no_show_all(True)
         self._timer_label.set_visible(False)
-        self._pill_box.append(self._timer_label)
+        self._pill_box.pack_start(self._timer_label, False, False, 0)
 
         # --- Separator (visible on hover) --------------------------------
         self._separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
         self._separator.set_size_request(1, 16)
         self._separator.set_valign(Gtk.Align.CENTER)
+        self._separator.set_no_show_all(True)
         self._separator.set_visible(False)
-        self._pill_box.append(self._separator)
+        self._pill_box.pack_start(self._separator, False, False, 0)
 
         # --- History button (visible on hover) ---------------------------
         self._history_btn = Gtk.Button()
-        self._history_btn.add_css_class("icon-btn")
+        self._history_btn.get_style_context().add_class("icon-btn")
         history_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         history_box.set_valign(Gtk.Align.CENTER)
 
-        history_icon = Gtk.Image.new_from_icon_name("document-open-recent-symbolic")
+        history_icon = Gtk.Image.new_from_icon_name("document-open-recent-symbolic", Gtk.IconSize.BUTTON)
         history_icon.set_pixel_size(14)
-        history_box.append(history_icon)
+        history_box.pack_start(history_icon, False, False, 0)
 
         history_text = Gtk.Label(label=i18n.t("indicator.history", fallback="History"))
-        history_text.add_css_class("text-sm")
-        history_box.append(history_text)
+        history_text.get_style_context().add_class("text-sm")
+        history_box.pack_start(history_text, False, False, 0)
 
-        self._history_btn.set_child(history_box)
+        self._history_btn.add(history_box)
+        self._history_btn.set_no_show_all(True)
         self._history_btn.set_visible(False)
         self._history_btn.connect("clicked", self._on_history_clicked)
-        self._pill_box.append(self._history_btn)
+        self._pill_box.pack_start(self._history_btn, False, False, 0)
 
-        # --- Hover detection ---------------------------------------------
-        motion = Gtk.EventControllerMotion()
-        motion.connect("enter", self._on_mouse_enter)
-        motion.connect("leave", self._on_mouse_leave)
-        self._pill_box.add_controller(motion)
+        # --- Hover detection (EventBox for GTK3) -------------------------
+        self._event_box = Gtk.EventBox()
+        self._event_box.add_events(
+            Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
+        )
+        self._event_box.connect("enter-notify-event", self._on_mouse_enter)
+        self._event_box.connect("leave-notify-event", self._on_mouse_leave)
+        self._event_box.add(self._pill_box)
 
-        self.set_child(self._pill_box)
+        self.add(self._event_box)
 
     # ------------------------------------------------------------------
     # Drawing
@@ -139,10 +144,10 @@ class IndicatorWindow(Gtk.Window):
         self,
         area: Gtk.DrawingArea,
         cr,
-        width: int,
-        height: int,
     ) -> None:
         """Draw a filled circle as the status dot."""
+        width = area.get_allocated_width()
+        height = area.get_allocated_height()
         if self._recording:
             cr.set_source_rgba(0.714, 1.0, 0.808, 1.0)  # #B6FFCE
         elif self._downloading:
@@ -164,14 +169,14 @@ class IndicatorWindow(Gtk.Window):
 
     def _apply_x11_properties(self) -> bool:
         """Use xprop to set the window type and state via the X11 window id."""
-        surface = self.get_surface()
+        surface = self.get_window()
         if surface is None:
             return False
 
         try:
             from gi.repository import GdkX11  # noqa: F401 -- ensure X11 backend
 
-            if not isinstance(surface, GdkX11.X11Surface):
+            if not isinstance(surface, GdkX11.X11Window):
                 logger.warning("Not running on X11; skipping xprop calls.")
                 return False
 
@@ -213,11 +218,11 @@ class IndicatorWindow(Gtk.Window):
         if display is None:
             return False
 
-        monitors = display.get_monitors()
-        if monitors.get_n_items() == 0:
+        n_monitors = display.get_n_monitors()
+        if n_monitors == 0:
             return False
 
-        monitor = monitors.get_item(0)
+        monitor = display.get_monitor(0)
         geo = monitor.get_geometry()
 
         # The natural size of the pill.
@@ -229,13 +234,13 @@ class IndicatorWindow(Gtk.Window):
         y = geo.y + geo.height - _BOTTOM_MARGIN - 40  # 40px approx pill height
         self._indicator_geo = (x, y, nat_width, 40)
 
-        surface = self.get_surface()
-        if surface is not None:
+        gdk_win = self.get_window()
+        if gdk_win is not None:
             try:
                 from gi.repository import GdkX11
 
-                if isinstance(surface, GdkX11.X11Surface):
-                    surface.move(x, y)
+                if isinstance(gdk_win, GdkX11.X11Window):
+                    self.move(x, y)
             except (ImportError, AttributeError):
                 pass
 
@@ -245,14 +250,14 @@ class IndicatorWindow(Gtk.Window):
     # Hover logic
     # ------------------------------------------------------------------
 
-    def _on_mouse_enter(self, controller, x, y) -> None:
+    def _on_mouse_enter(self, widget, event) -> None:
         if self._leave_timeout_id is not None:
             GLib.source_remove(self._leave_timeout_id)
             self._leave_timeout_id = None
         self._separator.set_visible(True)
         self._history_btn.set_visible(True)
 
-    def _on_mouse_leave(self, controller) -> None:
+    def _on_mouse_leave(self, widget, event) -> None:
         # Delay hiding so the user can reach the history button / panel.
         self._leave_timeout_id = GLib.timeout_add(400, self._hide_hover_widgets)
 
@@ -272,12 +277,12 @@ class IndicatorWindow(Gtk.Window):
 
     def get_xid(self) -> int:
         """Return the X11 window ID of this indicator window (0 if unavailable)."""
-        surface = self.get_surface()
+        surface = self.get_window()
         if surface is None:
             return 0
         try:
             from gi.repository import GdkX11
-            if isinstance(surface, GdkX11.X11Surface):
+            if isinstance(surface, GdkX11.X11Window):
                 return surface.get_xid()
         except (ImportError, AttributeError):
             pass

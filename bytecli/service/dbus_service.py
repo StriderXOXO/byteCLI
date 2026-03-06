@@ -77,14 +77,14 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="s"
     )
-    def GetStatus(self) -> str:
+    def GetStatus(self):
         """Return the current service state as a string."""
         return self._state.state.value
 
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="b"
     )
-    def Stop(self) -> bool:
+    def Stop(self):
         """Request the service to shut down."""
         logger.info("D-Bus Stop() called.")
         if self._stop_callback is not None:
@@ -99,7 +99,7 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="b"
     )
-    def Restart(self) -> bool:
+    def Restart(self):
         """Request the service to restart."""
         logger.info("D-Bus Restart() called.")
         if self._restart_callback is not None:
@@ -114,7 +114,7 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="b"
     )
-    def RefreshIndicator(self) -> bool:
+    def RefreshIndicator(self):
         """Kill and restart the indicator widget process."""
         logger.info("D-Bus RefreshIndicator() called.")
         if self._indicator_restart_callback is not None:
@@ -129,7 +129,7 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="s", out_signature="b"
     )
-    def SwitchModel(self, model: str) -> bool:
+    def SwitchModel(self, model):
         """Initiate an asynchronous model switch."""
         from bytecli.constants import WHISPER_MODELS
 
@@ -145,7 +145,7 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="s", out_signature="b"
     )
-    def SwitchDevice(self, device: str) -> bool:
+    def SwitchDevice(self, device):
         """Initiate an asynchronous compute-device switch."""
         logger.info("D-Bus SwitchDevice(%r) called.", device)
         if device not in ("gpu", "cpu"):
@@ -159,14 +159,14 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="a(sss)"
     )
-    def GetHistory(self) -> List[Tuple[str, str, str]]:
+    def GetHistory(self):
         """Return all transcription history entries."""
         return self._history.get_all()
 
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="a(ss)"
     )
-    def GetAudioDevices(self) -> List[Tuple[str, str]]:
+    def GetAudioDevices(self):
         """Return available audio input devices."""
         try:
             return self._audio.get_devices()
@@ -177,14 +177,14 @@ class ByteCLIDBusService(dbus.service.Object):
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="", out_signature="s"
     )
-    def GetConfig(self) -> str:
+    def GetConfig(self):
         """Return the current configuration as a JSON string."""
         return json.dumps(self._config.config, ensure_ascii=False)
 
     @dbus.service.method(
         DBUS_INTERFACE, in_signature="s", out_signature="b"
     )
-    def SaveConfig(self, config_json: str) -> bool:
+    def SaveConfig(self, config_json):
         """Validate and persist a new configuration.
 
         Returns ``True`` on success.
@@ -213,36 +213,36 @@ class ByteCLIDBusService(dbus.service.Object):
     # ==================================================================
 
     @dbus.service.signal(DBUS_INTERFACE, signature="s")
-    def StatusChanged(self, status: str) -> None:
+    def StatusChanged(self, status):
         """Emitted when the service state changes."""
         logger.debug("Signal StatusChanged(%r)", status)
 
     @dbus.service.signal(DBUS_INTERFACE, signature="ss")
-    def ModelSwitchProgress(self, state: str, msg: str) -> None:
+    def ModelSwitchProgress(self, state, msg):
         """Emitted during a model switch (switching/success/failed)."""
         logger.debug("Signal ModelSwitchProgress(%r, %r)", state, msg)
 
     @dbus.service.signal(DBUS_INTERFACE, signature="ss")
-    def DeviceSwitchProgress(self, state: str, msg: str) -> None:
+    def DeviceSwitchProgress(self, state, msg):
         """Emitted during a device switch (switching/success/failed)."""
         logger.debug("Signal DeviceSwitchProgress(%r, %r)", state, msg)
 
     @dbus.service.signal(DBUS_INTERFACE, signature="")
-    def RecordingStarted(self) -> None:
+    def RecordingStarted(self):
         """Emitted when the user presses the hotkey and recording begins."""
         logger.debug("Signal RecordingStarted()")
 
     @dbus.service.signal(DBUS_INTERFACE, signature="s")
-    def RecordingStopped(self, text: str) -> None:
+    def RecordingStopped(self, text):
         """Emitted when recording ends.  *text* is the transcription result."""
         logger.debug("Signal RecordingStopped(%r)", text[:80] if text else "")
 
     @dbus.service.signal(DBUS_INTERFACE, signature="is")
-    def ModelDownloadProgress(self, percent: int, message: str) -> None:
+    def ModelDownloadProgress(self, percent, message):
         """Emitted during first-run model download with progress updates."""
         logger.debug("Signal ModelDownloadProgress(%d, %r)", percent, message)
 
     @dbus.service.signal(DBUS_INTERFACE, signature="a(ss)")
-    def AudioDeviceChanged(self, devices: List[Tuple[str, str]]) -> None:
+    def AudioDeviceChanged(self, devices):
         """Emitted when PulseAudio sources are added or removed."""
         logger.debug("Signal AudioDeviceChanged(%d devices)", len(devices))

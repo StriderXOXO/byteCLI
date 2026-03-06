@@ -69,19 +69,19 @@ info "Creating wrapper scripts..."
 mkdir -p "${STAGING}/usr/bin"
 
 cat > "${STAGING}/usr/bin/bytecli-service" << 'WRAPPER'
-#!/usr/bin/env python3
+#!/usr/bin/python3
 from bytecli.service.main import main
 main()
 WRAPPER
 
 cat > "${STAGING}/usr/bin/bytecli-indicator" << 'WRAPPER'
-#!/usr/bin/env python3
+#!/usr/bin/python3
 from bytecli.indicator.main import main
 main()
 WRAPPER
 
 cat > "${STAGING}/usr/bin/bytecli-settings" << 'WRAPPER'
-#!/usr/bin/env python3
+#!/usr/bin/python3
 from bytecli.settings.main import main
 main()
 WRAPPER
@@ -102,6 +102,8 @@ cat > "${STAGING}/lib/systemd/user/bytecli.service" << 'SERVICE'
 [Unit]
 Description=ByteCLI Voice Dictation Service
 After=graphical-session.target
+StartLimitBurst=3
+StartLimitIntervalSec=60
 
 [Service]
 Type=simple
@@ -110,8 +112,6 @@ Environment=DISPLAY=:0
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus
 Restart=on-failure
 RestartSec=5
-StartLimitBurst=3
-StartLimitIntervalSec=60
 
 [Install]
 WantedBy=default.target

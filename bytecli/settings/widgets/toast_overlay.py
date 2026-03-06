@@ -23,7 +23,7 @@ from typing import Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import GLib, Gtk
 
@@ -64,8 +64,8 @@ class SettingsToastOverlay:
 
         # Toast container.
         toast = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        toast.add_css_class("toast")
-        toast.add_css_class(f"toast-{variant}")
+        toast.get_style_context().add_class("toast")
+        toast.get_style_context().add_class(f"toast-{variant}")
         toast.set_halign(Gtk.Align.CENTER)
         toast.set_valign(Gtk.Align.END)
         toast.set_margin_bottom(16)
@@ -75,11 +75,11 @@ class SettingsToastOverlay:
         bar = Gtk.DrawingArea()
         bar.set_size_request(3, 20)
         bar.set_valign(Gtk.Align.CENTER)
-        bar.set_draw_func(self._make_bar_draw(color))
-        toast.append(bar)
+        bar.connect("draw", self._make_bar_draw(color))
+        toast.pack_start(bar, False, False, 0)
 
         # Icon.
-        icon = Gtk.Image.new_from_icon_name(icon_name)
+        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
         icon.set_pixel_size(16)
         icon.set_valign(Gtk.Align.CENTER)
         provider = Gtk.CssProvider()
@@ -87,17 +87,18 @@ class SettingsToastOverlay:
         icon.get_style_context().add_provider(
             provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
-        toast.append(icon)
+        toast.pack_start(icon, False, False, 0)
 
         # Message label.
         label = Gtk.Label(label=message)
         label.set_halign(Gtk.Align.START)
         label.set_hexpand(True)
-        label.set_wrap(True)
+        label.set_line_wrap(True)
         _apply_font_size(label, 13)
-        toast.append(label)
+        toast.pack_start(label, True, True, 0)
 
         self._overlay.add_overlay(toast)
+        toast.show_all()
         self._active_toasts.append(toast)
 
         # Auto-dismiss after 3 seconds.
@@ -106,14 +107,16 @@ class SettingsToastOverlay:
     def _dismiss(self, toast: Gtk.Box) -> bool:
         if toast in self._active_toasts:
             self._active_toasts.remove(toast)
-            self._overlay.remove_overlay(toast)
+            self._overlay.remove(toast)
         return False
 
     @staticmethod
     def _make_bar_draw(hex_color: str):
         r, g, b = _hex_to_rgb(hex_color)
 
-        def _draw(area, cr, w, h):
+        def _draw(area, cr):
+            w = area.get_allocated_width()
+            h = area.get_allocated_height()
             cr.set_source_rgba(r, g, b, 1.0)
             _rounded_rect(cr, 0, 0, w, h, 2)
             cr.fill()

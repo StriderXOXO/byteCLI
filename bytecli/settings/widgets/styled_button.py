@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
 
@@ -49,9 +49,9 @@ class StyledButton(Gtk.Button):
 
         # Apply the variant CSS class.
         css_class = _VARIANT_CLASSES.get(variant, "primary-btn")
-        self.add_css_class(css_class)
-        self.add_css_class("mono")
-        self.add_css_class("font-medium")
+        self.get_style_context().add_class(css_class)
+        self.get_style_context().add_class("mono")
+        self.get_style_context().add_class("font-medium")
 
         # Destructive buttons need inline CSS because there is no global
         # .destructive-btn rule in the shared stylesheet -- add it here.
@@ -63,9 +63,9 @@ class StyledButton(Gtk.Button):
         self._disabled = disabled
         self.set_sensitive(not disabled)
         if disabled:
-            self.add_css_class("disabled-btn")
+            self.get_style_context().add_class("disabled-btn")
         else:
-            self.remove_css_class("disabled-btn")
+            self.get_style_context().remove_class("disabled-btn")
 
     @property
     def disabled(self) -> bool:

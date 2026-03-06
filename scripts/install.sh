@@ -27,6 +27,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # ----------------------------------------------------------------
+# 0. GTK3 check (available natively on Ubuntu 18.04+)
+# ----------------------------------------------------------------
+step "Checking GTK3 availability"
+
+if dpkg -s gir1.2-gtk-3.0 &>/dev/null; then
+    success "GTK3 already installed"
+else
+    info "Installing GTK3..."
+    sudo apt-get install -y gir1.2-gtk-3.0 python3-gi
+    success "GTK3 installed"
+fi
+
+# ----------------------------------------------------------------
 # 1. Check for required system packages
 # ----------------------------------------------------------------
 step "Checking system dependencies"

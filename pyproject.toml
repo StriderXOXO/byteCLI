@@ -8,7 +8,7 @@ version = "1.1.0"
 description = "Local voice-to-text dictation tool for Ubuntu/Linux"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 authors = [
     { name = "ByteCLI Contributors" },
 ]
@@ -20,6 +20,8 @@ classifiers = [
 
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

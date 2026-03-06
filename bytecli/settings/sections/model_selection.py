@@ -13,7 +13,7 @@ from typing import Any, Callable, Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import GLib, Gtk
 
@@ -73,9 +73,9 @@ class ModelSelectionSection(Gtk.Box):
                 highlight_description=is_recommended,
             )
             self._radios[key] = radio
-            self._card.card_content.append(radio)
+            self._card.card_content.pack_start(radio, False, False, 0)
 
-        self.append(self._card)
+        self.pack_start(self._card, False, False, 0)
 
         # Set initial selection from config.
         self._apply_selection(config.get("model", "small"))

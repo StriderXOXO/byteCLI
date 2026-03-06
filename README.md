@@ -10,7 +10,7 @@ Speak your code into existence. Zero cloud, all local.
 [![Website](https://img.shields.io/badge/Website-byte--cli.com-FF8400?style=flat-square)](https://byte-cli.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Ubuntu 20.04+](https://img.shields.io/badge/Ubuntu-20.04%2B-E95420?style=flat-square&logo=ubuntu&logoColor=white)](https://ubuntu.com)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Tests](https://img.shields.io/badge/Tests-94%20passed-B6FFCE?style=flat-square)](#)
 
 [Website](https://byte-cli.com) · [Download .deb](https://github.com/StriderXOXO/byteCLI/releases) · [Report Bug](https://github.com/StriderXOXO/byteCLI/issues)
@@ -41,9 +41,13 @@ $ byte --status
 sudo snap install bytecli --classic
 ```
 
-**Ubuntu / Debian (.deb, 22.04+):**
+**Ubuntu / Debian (.deb, 20.04+):**
 
 ```bash
+# Ubuntu 20.04 & 22.04+ — use the installer script (handles GTK4 PPA on 20.04):
+bash scripts/install-deb.sh bytecli_1.1.0_amd64.deb
+
+# Or on Ubuntu 22.04+, install directly:
 sudo apt install ./bytecli_1.1.0_amd64.deb
 ```
 
@@ -52,14 +56,21 @@ Download from [Releases](https://github.com/StriderXOXO/byteCLI/releases). The s
 **Developer install:**
 
 ```bash
+# Ubuntu 22.04+:
 sudo apt install xclip xdotool portaudio19-dev python3-gi gir1.2-gtk-4.0
+
+# Ubuntu 20.04 (focal) — install GTK4 via PPA first:
+sudo add-apt-repository ppa:gnome3-team/gnome3
+sudo apt update
+sudo apt install xclip xdotool portaudio19-dev python3-gi gir1.2-gtk-4.0
+
 git clone https://github.com/StriderXOXO/byteCLI.git
 cd byteCLI
 pip install -e .
 ./scripts/install.sh
 ```
 
-> Requires **Ubuntu 20.04+** (Snap) or **22.04+** (.deb), **X11** session (Wayland has limited support), and a microphone.
+> Requires **Ubuntu 20.04+**, **X11** session (Wayland has limited support), and a microphone.
 
 ## Features
 

@@ -12,7 +12,7 @@ from typing import Any, Callable, Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import GLib, Gtk
 
@@ -62,7 +62,7 @@ class DeviceSelectionSection(Gtk.Box):
             description_text="",
             on_clicked=lambda r: self._on_radio_clicked("gpu"),
         )
-        self._card.card_content.append(self._gpu_radio)
+        self._card.card_content.pack_start(self._gpu_radio, False, False, 0)
 
         # CPU option.
         self._cpu_radio = RadioOption(
@@ -70,18 +70,19 @@ class DeviceSelectionSection(Gtk.Box):
             description_text="",
             on_clicked=lambda r: self._on_radio_clicked("cpu"),
         )
-        self._card.card_content.append(self._cpu_radio)
+        self._card.card_content.pack_start(self._cpu_radio, False, False, 0)
 
         # Warning label for missing CUDA.
         self._cuda_warning = Gtk.Label()
-        self._cuda_warning.add_css_class("text-error")
-        self._cuda_warning.add_css_class("text-sm")
+        self._cuda_warning.get_style_context().add_class("text-error")
+        self._cuda_warning.get_style_context().add_class("text-sm")
         self._cuda_warning.set_halign(Gtk.Align.START)
         self._cuda_warning.set_margin_top(4)
+        self._cuda_warning.set_no_show_all(True)
         self._cuda_warning.set_visible(False)
-        self._card.card_content.append(self._cuda_warning)
+        self._card.card_content.pack_start(self._cuda_warning, False, False, 0)
 
-        self.append(self._card)
+        self.pack_start(self._card, False, False, 0)
 
         # Apply initial state.
         if not self._has_cuda:

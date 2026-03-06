@@ -17,7 +17,7 @@ from typing import Any
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
 
@@ -60,7 +60,7 @@ class StartupConfigSection(Gtk.Box):
         self._switch = Gtk.Switch()
         self._switch.set_valign(Gtk.Align.CENTER)
         self._switch.connect("notify::active", self._on_toggled)
-        row.append(self._switch)
+        row.pack_start(self._switch, False, False, 0)
 
         self._label = Gtk.Label(
             label=i18n.t(
@@ -68,13 +68,13 @@ class StartupConfigSection(Gtk.Box):
                 fallback="Start automatically on system boot",
             )
         )
-        self._label.add_css_class("text-base")
+        self._label.get_style_context().add_class("text-base")
         self._label.set_halign(Gtk.Align.START)
         self._label.set_hexpand(True)
-        row.append(self._label)
+        row.pack_start(self._label, True, True, 0)
 
-        self._card.card_content.append(row)
-        self.append(self._card)
+        self._card.card_content.pack_start(row, False, False, 0)
+        self.pack_start(self._card, False, False, 0)
 
         # Set initial state from config.
         auto = config.get("auto_start", False)

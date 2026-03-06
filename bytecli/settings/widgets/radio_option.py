@@ -24,9 +24,9 @@ from typing import Callable, Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
-from gi.repository import GLib, Gtk
+from gi.repository import Gdk, GLib, Gtk
 
 
 class RadioOption(Gtk.Box):
@@ -60,7 +60,7 @@ class RadioOption(Gtk.Box):
         highlight_description: bool = False,
     ) -> None:
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        self.add_css_class("radio-row")
+        self.get_style_context().add_class("radio-row")
         self.set_hexpand(True)
 
         self._selected = False
@@ -80,8 +80,8 @@ class RadioOption(Gtk.Box):
         self._radio_dot = Gtk.DrawingArea()
         self._radio_dot.set_size_request(16, 16)
         self._radio_dot.set_valign(Gtk.Align.CENTER)
-        self._radio_dot.set_draw_func(self._draw_radio)
-        self.append(self._radio_dot)
+        self._radio_dot.connect("draw", self._draw_radio)
+        self.pack_start(self._radio_dot, False, False, 0)
 
         # Text column.
         text_col = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -89,34 +89,35 @@ class RadioOption(Gtk.Box):
         text_col.set_hexpand(True)
 
         self._label = Gtk.Label(label=label_text)
-        self._label.add_css_class("text-base")
+        self._label.get_style_context().add_class("text-base")
         self._label.set_halign(Gtk.Align.START)
-        text_col.append(self._label)
+        text_col.pack_start(self._label, False, False, 0)
 
         if description_text:
             self._description = Gtk.Label(label=description_text)
             self._description.set_halign(Gtk.Align.START)
             _apply_font_size(self._description, 13)
             if highlight_description:
-                self._description.add_css_class("text-primary")
+                self._description.get_style_context().add_class("text-primary")
             else:
-                self._description.add_css_class("text-muted")
-            text_col.append(self._description)
+                self._description.get_style_context().add_class("text-muted")
+            text_col.pack_start(self._description, False, False, 0)
         else:
             self._description = None
 
-        self.append(text_col)
+        self.pack_start(text_col, True, True, 0)
 
         # Status indicator area (spinner / checkmark / x-mark).
         self._status_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self._status_box.set_valign(Gtk.Align.CENTER)
         self._status_box.set_size_request(24, 24)
-        self.append(self._status_box)
+        self.pack_start(self._status_box, False, False, 0)
 
-        # Click handling via GestureClick.
-        gesture = Gtk.GestureClick()
-        gesture.connect("released", self._on_click)
-        self.add_controller(gesture)
+        # Click handling via EventBox wrapping.
+        # In GTK3, Gtk.Box cannot receive button events directly.
+        # We handle clicks by adding events to the widget.
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.connect("button-press-event", self._on_click_event)
 
     # ------------------------------------------------------------------
     # Properties
@@ -130,15 +131,15 @@ class RadioOption(Gtk.Box):
     def selected(self, value: bool) -> None:
         self._selected = value
         if value:
-            self.add_css_class("radio-row-active")
+            self.get_style_context().add_class("radio-row-active")
             # Deselect all other members of the group.
             for sibling in self._group:
                 if sibling is not self and sibling._selected:
                     sibling._selected = False
-                    sibling.remove_css_class("radio-row-active")
+                    sibling.get_style_context().remove_class("radio-row-active")
                     sibling._radio_dot.queue_draw()
         else:
-            self.remove_css_class("radio-row-active")
+            self.get_style_context().remove_class("radio-row-active")
         self._radio_dot.queue_draw()
 
     @property
@@ -177,7 +178,9 @@ class RadioOption(Gtk.Box):
     # Drawing
     # ------------------------------------------------------------------
 
-    def _draw_radio(self, area, cr, width, height) -> None:
+    def _draw_radio(self, area, cr) -> None:
+        width = area.get_allocated_width()
+        height = area.get_allocated_height()
         cx = width / 2.0
         cy = height / 2.0
         radius = min(width, height) / 2.0 - 1
@@ -201,11 +204,12 @@ class RadioOption(Gtk.Box):
     # Click handling
     # ------------------------------------------------------------------
 
-    def _on_click(self, gesture, n_press, x, y) -> None:
+    def _on_click_event(self, widget, event) -> bool:
         if self._disabled or self._selected:
-            return
+            return False
         if self._on_clicked is not None:
             self._on_clicked(self)
+        return True
 
     # ------------------------------------------------------------------
     # Status indicators -- high-level API
@@ -243,31 +247,31 @@ class RadioOption(Gtk.Box):
         spinner = Gtk.Spinner()
         spinner.set_size_request(16, 16)
         spinner.start()
-        self._status_box.append(spinner)
+        self._status_box.pack_start(spinner, False, False, 0)
+        spinner.show()
 
     def show_checkmark(self, duration_ms: int = 2000) -> None:
         """Show a green checkmark, then clear after *duration_ms*."""
         self._clear_status()
-        icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
+        icon = Gtk.Image.new_from_icon_name("emblem-ok-symbolic", Gtk.IconSize.BUTTON)
         icon.set_pixel_size(16)
-        icon.add_css_class("text-success")
-        self._status_box.append(icon)
+        icon.get_style_context().add_class("text-success")
+        self._status_box.pack_start(icon, False, False, 0)
+        icon.show()
         GLib.timeout_add(duration_ms, self._clear_status)
 
     def show_x_mark(self) -> None:
         """Show a red X icon in the status area."""
         self._clear_status()
-        icon = Gtk.Image.new_from_icon_name("process-stop-symbolic")
+        icon = Gtk.Image.new_from_icon_name("process-stop-symbolic", Gtk.IconSize.BUTTON)
         icon.set_pixel_size(16)
-        icon.add_css_class("text-error")
-        self._status_box.append(icon)
+        icon.get_style_context().add_class("text-error")
+        self._status_box.pack_start(icon, False, False, 0)
+        icon.show()
 
     def _clear_status(self) -> bool:
-        child = self._status_box.get_first_child()
-        while child is not None:
-            next_child = child.get_next_sibling()
+        for child in self._status_box.get_children():
             self._status_box.remove(child)
-            child = next_child
         return False  # for use as GLib timeout callback
 
 

@@ -14,7 +14,7 @@ from typing import Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import GLib, Gtk
 
@@ -57,16 +57,16 @@ class ServerStatusSection(Gtk.Box):
         self._dot = Gtk.DrawingArea()
         self._dot.set_size_request(8, 8)
         self._dot.set_valign(Gtk.Align.CENTER)
-        self._dot.set_draw_func(self._draw_dot)
-        top_row.append(self._dot)
+        self._dot.connect("draw", self._draw_dot)
+        top_row.pack_start(self._dot, False, False, 0)
 
         # Status text.
         self._status_label = Gtk.Label(label=i18n.t("server.stopped", fallback="Stopped"))
-        self._status_label.add_css_class("text-base")
-        self._status_label.add_css_class("font-medium")
+        self._status_label.get_style_context().add_class("text-base")
+        self._status_label.get_style_context().add_class("font-medium")
         self._status_label.set_halign(Gtk.Align.START)
         self._status_label.set_hexpand(True)
-        top_row.append(self._status_label)
+        top_row.pack_start(self._status_label, True, True, 0)
 
         # Action buttons.
         self._btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -75,43 +75,47 @@ class ServerStatusSection(Gtk.Box):
             label=i18n.t("server.btn_stop", fallback="Stop"),
             variant="secondary",
         )
-        self._stop_btn.add_css_class("btn-sm")
+        self._stop_btn.get_style_context().add_class("btn-sm")
         self._stop_btn.connect("clicked", self._on_stop)
-        self._btn_box.append(self._stop_btn)
+        self._stop_btn.set_no_show_all(True)
+        self._btn_box.pack_start(self._stop_btn, False, False, 0)
 
         self._restart_btn = StyledButton(
             label=i18n.t("server.btn_restart", fallback="Restart"),
             variant="secondary",
         )
-        self._restart_btn.add_css_class("btn-sm")
+        self._restart_btn.get_style_context().add_class("btn-sm")
         self._restart_btn.connect("clicked", self._on_restart)
-        self._btn_box.append(self._restart_btn)
+        self._restart_btn.set_no_show_all(True)
+        self._btn_box.pack_start(self._restart_btn, False, False, 0)
 
         self._start_btn = StyledButton(
             label=i18n.t("server.btn_start", fallback="Start"),
             variant="primary",
         )
-        self._start_btn.add_css_class("btn-sm")
+        self._start_btn.get_style_context().add_class("btn-sm")
         self._start_btn.connect("clicked", self._on_start)
-        self._btn_box.append(self._start_btn)
+        self._start_btn.set_no_show_all(True)
+        self._btn_box.pack_start(self._start_btn, False, False, 0)
 
-        top_row.append(self._btn_box)
-        self._card.card_content.append(top_row)
+        top_row.pack_start(self._btn_box, False, False, 0)
+        self._card.card_content.pack_start(top_row, False, False, 0)
 
         # --- Error detail (hidden by default) ----------------------------
         self._error_label = Gtk.Label()
-        self._error_label.add_css_class("text-error")
-        self._error_label.add_css_class("text-sm")
+        self._error_label.get_style_context().add_class("text-error")
+        self._error_label.get_style_context().add_class("text-sm")
         self._error_label.set_halign(Gtk.Align.START)
-        self._error_label.set_wrap(True)
+        self._error_label.set_line_wrap(True)
+        self._error_label.set_no_show_all(True)
         self._error_label.set_visible(False)
-        self._card.card_content.append(self._error_label)
+        self._card.card_content.pack_start(self._error_label, False, False, 0)
 
         # Separator.
         sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         sep.set_margin_top(8)
         sep.set_margin_bottom(8)
-        self._card.card_content.append(sep)
+        self._card.card_content.pack_start(sep, False, False, 0)
 
         # --- Bottom row: refresh indicator -------------------------------
         bottom_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -122,11 +126,11 @@ class ServerStatusSection(Gtk.Box):
                 fallback="Floating indicator disappeared?",
             )
         )
-        hint.add_css_class("text-muted")
-        hint.add_css_class("text-sm")
+        hint.get_style_context().add_class("text-muted")
+        hint.get_style_context().add_class("text-sm")
         hint.set_halign(Gtk.Align.START)
         hint.set_hexpand(True)
-        bottom_row.append(hint)
+        bottom_row.pack_start(hint, True, True, 0)
 
         self._refresh_btn = StyledButton(
             label=i18n.t(
@@ -135,13 +139,13 @@ class ServerStatusSection(Gtk.Box):
             ),
             variant="secondary",
         )
-        self._refresh_btn.add_css_class("btn-sm")
+        self._refresh_btn.get_style_context().add_class("btn-sm")
         self._refresh_btn.connect("clicked", self._on_refresh_indicator)
-        bottom_row.append(self._refresh_btn)
+        bottom_row.pack_start(self._refresh_btn, False, False, 0)
 
-        self._card.card_content.append(bottom_row)
+        self._card.card_content.pack_start(bottom_row, False, False, 0)
 
-        self.append(self._card)
+        self.pack_start(self._card, False, False, 0)
 
         # Subscribe to StatusChanged signal.
         self._dbus_client.subscribe_signal("StatusChanged", self._on_status_signal)
@@ -226,7 +230,9 @@ class ServerStatusSection(Gtk.Box):
     # Dot drawing
     # ------------------------------------------------------------------
 
-    def _draw_dot(self, area, cr, width, height) -> None:
+    def _draw_dot(self, area, cr) -> None:
+        width = area.get_allocated_width()
+        height = area.get_allocated_height()
         colours = {
             "RUNNING": (0.714, 1.0, 0.808),
             "STOPPED": (1.0, 0.36, 0.2),
@@ -266,7 +272,17 @@ class ServerStatusSection(Gtk.Box):
 
     def _on_start(self, btn) -> None:
         self._set_state("STARTING")
-        self._dbus_client.start_service()
+
+        def _after_start(result):
+            # Give service a moment to register on D-Bus, then reconnect.
+            def _poll():
+                if not self._dbus_client.is_connected:
+                    self._dbus_client.connect()
+                self._fetch_status()
+                return False  # one-shot
+            GLib.timeout_add(2000, _poll)
+
+        self._dbus_client.start_service(callback=_after_start)
 
     def _on_stop(self, btn) -> None:
         self._set_state("STOPPING")

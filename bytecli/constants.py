@@ -6,6 +6,8 @@ design tokens, Whisper model metadata and default configuration values used
 across the three ByteCLI processes.
 """
 
+from __future__ import annotations
+
 import os
 
 # ---------------------------------------------------------------------------

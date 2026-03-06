@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
 
@@ -33,19 +33,19 @@ class HotkeyConfigSection(Gtk.Box):
         self._trigger_label = Gtk.Label(
             label=i18n.t("hotkey.trigger_key", fallback="Trigger Key:")
         )
-        self._trigger_label.add_css_class("text-base")
-        self._trigger_label.add_css_class("text-muted")
+        self._trigger_label.get_style_context().add_class("text-base")
+        self._trigger_label.get_style_context().add_class("text-muted")
         self._trigger_label.set_halign(Gtk.Align.START)
-        row.append(self._trigger_label)
+        row.pack_start(self._trigger_label, False, False, 0)
 
         value_label = Gtk.Label(label="Ctrl + Alt + V")
-        value_label.add_css_class("mono")
-        value_label.add_css_class("font-semibold")
+        value_label.get_style_context().add_class("mono")
+        value_label.get_style_context().add_class("font-semibold")
         value_label.set_halign(Gtk.Align.START)
-        row.append(value_label)
+        row.pack_start(value_label, False, False, 0)
 
-        self._card.card_content.append(row)
-        self.append(self._card)
+        self._card.card_content.pack_start(row, False, False, 0)
+        self.pack_start(self._card, False, False, 0)
 
     def refresh_labels(self) -> None:
         self._card.set_title(

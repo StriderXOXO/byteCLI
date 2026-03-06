@@ -150,13 +150,47 @@ class DBusClient:
     # --- Service lifecycle -----------------------------------------------
 
     def start_service(self, callback: Optional[Callable] = None) -> None:
-        self._call_async("Start", callback=callback)
+        """Start the service via systemctl (no D-Bus 'Start' method exists)."""
+        self._systemctl_action("start", callback)
 
     def stop_service(self, callback: Optional[Callable] = None) -> None:
-        self._call_async("Stop", callback=callback)
+        """Stop the service. Try D-Bus first; fall back to systemctl."""
+        if self._proxy is not None:
+            self._call_async("Stop", callback=callback)
+        else:
+            self._systemctl_action("stop", callback)
 
     def restart_service(self, callback: Optional[Callable] = None) -> None:
-        self._call_async("Restart", callback=callback)
+        """Restart the service. Try D-Bus first; fall back to systemctl."""
+        if self._proxy is not None:
+            self._call_async("Restart", callback=callback)
+        else:
+            self._systemctl_action("restart", callback)
+
+    def _systemctl_action(
+        self,
+        action: str,
+        callback: Optional[Callable] = None,
+    ) -> None:
+        """Run ``systemctl --user <action> bytecli.service`` asynchronously."""
+        import subprocess
+
+        def _run():
+            try:
+                subprocess.check_call(
+                    ["systemctl", "--user", action, "bytecli.service"],
+                    timeout=10,
+                )
+                logger.info("systemctl --user %s bytecli.service succeeded", action)
+                if callback:
+                    GLib.idle_add(callback, True)
+            except Exception as exc:
+                logger.error("systemctl --user %s failed: %s", action, exc)
+                if callback:
+                    GLib.idle_add(callback, None)
+
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
 
     def get_status(self) -> Optional[str]:
         result = self._call_sync("GetStatus")

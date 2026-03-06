@@ -1,5 +1,5 @@
 /*
- * ByteCLI -- GTK 4 dark-theme stylesheet
+ * ByteCLI -- GTK 3 dark-theme stylesheet
  *
  * All design tokens are derived from the ByteCLI .pen design file.
  * Colour palette, radii, spacing and typography are centralised here so
@@ -72,11 +72,47 @@ window,
 .text-destructive { color: @destructive_color; }
 
 /* ===================================================================
+   Global GTK3 widget overrides
+   (strip system-theme gradients so our colors are respected)
+   =================================================================== */
+button {
+    background-image: none;
+    background-color: @muted_color;
+    color: @fg_color;
+    border: 1px solid @border_color;
+    box-shadow: none;
+    -gtk-icon-shadow: none;
+    text-shadow: none;
+}
+
+button:hover {
+    background-image: none;
+    background-color: shade(@muted_color, 1.2);
+}
+
+button:active,
+button:checked {
+    background-image: none;
+    background-color: shade(@muted_color, 0.85);
+}
+
+button:disabled {
+    background-image: none;
+    opacity: 0.4;
+}
+
+button label {
+    color: inherit;
+}
+
+/* ===================================================================
    Buttons
    =================================================================== */
 
 /* Primary (orange CTA) */
-.primary-btn {
+.primary-btn,
+button.primary-btn {
+    background-image: none;
     background-color: @primary_color;
     color: @primary_fg_color;
     border-radius: 999px;
@@ -87,18 +123,26 @@ window,
     border: none;
     box-shadow: none;
     outline: none;
+    text-shadow: none;
+    -gtk-icon-shadow: none;
 }
 
-.primary-btn:hover {
+.primary-btn:hover,
+button.primary-btn:hover {
+    background-image: none;
     background-color: shade(@primary_color, 1.08);
 }
 
-.primary-btn:active {
+.primary-btn:active,
+button.primary-btn:active {
+    background-image: none;
     background-color: shade(@primary_color, 0.9);
 }
 
 /* Secondary (dark outlined) */
-.secondary-btn {
+.secondary-btn,
+button.secondary-btn {
+    background-image: none;
     background-color: @bg_color;
     color: @secondary_fg_color;
     border: 1px solid @border_color;
@@ -109,13 +153,19 @@ window,
     font-size: 14px;
     box-shadow: none;
     outline: none;
+    text-shadow: none;
+    -gtk-icon-shadow: none;
 }
 
-.secondary-btn:hover {
+.secondary-btn:hover,
+button.secondary-btn:hover {
+    background-image: none;
     background-color: @muted_color;
 }
 
-.secondary-btn:active {
+.secondary-btn:active,
+button.secondary-btn:active {
+    background-image: none;
     background-color: shade(@muted_color, 0.85);
 }
 
@@ -264,51 +314,86 @@ window,
 }
 
 radiobutton radio {
+    background-image: none;
     background-color: @muted_color;
     border: 1px solid @border_color;
     min-width: 18px;
     min-height: 18px;
+    -gtk-icon-shadow: none;
 }
 
 radiobutton radio:checked {
+    background-image: none;
     background-color: @primary_color;
     border-color: @primary_color;
     color: @primary_fg_color;
+}
+
+radiobutton label {
+    color: @fg_color;
 }
 
 /* ===================================================================
    Check Buttons
    =================================================================== */
 checkbutton check {
+    background-image: none;
     background-color: @muted_color;
     border: 1px solid @border_color;
     border-radius: 4px;
     min-width: 18px;
     min-height: 18px;
+    -gtk-icon-shadow: none;
 }
 
 checkbutton check:checked {
+    background-image: none;
     background-color: @primary_color;
     border-color: @primary_color;
     color: @primary_fg_color;
 }
 
+checkbutton label {
+    color: @fg_color;
+}
+
 /* ===================================================================
    Dropdowns / ComboBoxes
    =================================================================== */
-.dropdown-btn {
+.dropdown-btn,
+combobox .dropdown-btn,
+combobox button {
+    background-image: none;
     background-color: @input_color;
     border: 1px solid @border_color;
     border-radius: 8px;
     padding: 8px 12px;
     color: @fg_color;
     min-height: 36px;
+    text-shadow: none;
+    -gtk-icon-shadow: none;
+    box-shadow: none;
 }
 
-.dropdown-btn:hover {
+.dropdown-btn:hover,
+combobox button:hover {
+    background-image: none;
     border-color: @muted_fg_color;
+    background-color: @input_color;
 }
 
+combobox cellview {
+    color: @fg_color;
+}
+
+combobox arrow {
+    color: @muted_fg_color;
+    -gtk-icon-source: -gtk-icontheme("pan-down-symbolic");
+    min-width: 16px;
+    min-height: 16px;
+}
+
+combobox window.popup menu,
 .dropdown-menu {
     background-color: @card_color;
     border: 1px solid @border_color;
@@ -316,14 +401,25 @@ checkbutton check:checked {
     padding: 4px;
 }
 
+combobox window.popup menu menuitem,
 .dropdown-item {
     padding: 8px 12px;
     border-radius: 6px;
     color: @fg_color;
+    background-image: none;
+    background-color: transparent;
 }
 
+combobox window.popup menu menuitem:hover,
 .dropdown-item:hover {
+    background-image: none;
     background-color: alpha(@muted_color, 0.6);
+}
+
+combobox window.popup menu menuitem:selected {
+    background-image: none;
+    background-color: alpha(@primary_color, 0.12);
+    color: @primary_color;
 }
 
 .dropdown-item-active {
@@ -336,6 +432,7 @@ checkbutton check:checked {
    =================================================================== */
 entry,
 .text-input {
+    background-image: none;
     background-color: @input_color;
     border: 1px solid @border_color;
     border-radius: 8px;
@@ -343,10 +440,12 @@ entry,
     color: @fg_color;
     min-height: 36px;
     caret-color: @primary_color;
+    text-shadow: none;
 }
 
 entry:focus,
 .text-input:focus {
+    background-image: none;
     border-color: @primary_color;
     outline: none;
 }
@@ -354,8 +453,14 @@ entry:focus,
 /* ===================================================================
    Scrollbar
    =================================================================== */
+scrollbar {
+    background-color: transparent;
+    background-image: none;
+}
+
 scrollbar slider {
     background-color: @muted_color;
+    background-image: none;
     border-radius: 999px;
     min-width: 6px;
     min-height: 6px;
@@ -363,6 +468,7 @@ scrollbar slider {
 
 scrollbar slider:hover {
     background-color: @muted_fg_color;
+    background-image: none;
 }
 
 /* ===================================================================

@@ -19,7 +19,7 @@ from typing import Any, Callable
 
 import gi
 
-gi.require_version("Gtk", "4.0")
+gi.require_version("Gtk", "3.0")
 
 from gi.repository import GLib, Gtk
 
@@ -59,32 +59,32 @@ class AudioInputSection(Gtk.Box):
         )
 
         # --- Dropdown row ---
-        self._string_list = Gtk.StringList()
-        self._dropdown = Gtk.DropDown(model=self._string_list)
-        self._dropdown.add_css_class("dropdown-btn")
+        self._dropdown = Gtk.ComboBoxText()
+        self._dropdown.get_style_context().add_class("dropdown-btn")
         self._dropdown.set_hexpand(True)
-        self._dropdown.connect("notify::selected", self._on_selection_changed)
-        self._card.card_content.append(self._dropdown)
+        self._dropdown.connect("changed", self._on_selection_changed)
+        self._card.card_content.pack_start(self._dropdown, False, False, 0)
 
         # --- No-device warning (hidden by default) ---
         self._error_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self._error_box.set_margin_top(6)
         self._error_box.set_visible(False)
 
-        error_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        error_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic", Gtk.IconSize.BUTTON)
         error_icon.set_pixel_size(14)
-        error_icon.add_css_class("text-error")
-        self._error_box.append(error_icon)
+        error_icon.get_style_context().add_class("text-error")
+        self._error_box.pack_start(error_icon, False, False, 0)
 
         self._error_label = Gtk.Label(
             label=i18n.t("audio.no_devices", fallback="No devices detected")
         )
-        self._error_label.add_css_class("text-error")
-        self._error_label.add_css_class("text-sm")
+        self._error_label.get_style_context().add_class("text-error")
+        self._error_label.get_style_context().add_class("text-sm")
         self._error_label.set_halign(Gtk.Align.START)
-        self._error_box.append(self._error_label)
+        self._error_box.pack_start(self._error_label, False, False, 0)
 
-        self._card.card_content.append(self._error_box)
+        self._error_box.set_no_show_all(True)
+        self._card.card_content.pack_start(self._error_box, False, False, 0)
 
         # Hint text below the error.
         self._hint_label = Gtk.Label(
@@ -93,14 +93,15 @@ class AudioInputSection(Gtk.Box):
                 fallback="Connect a microphone and restart the service.",
             )
         )
-        self._hint_label.add_css_class("text-muted")
-        self._hint_label.add_css_class("text-sm")
+        self._hint_label.get_style_context().add_class("text-muted")
+        self._hint_label.get_style_context().add_class("text-sm")
         self._hint_label.set_halign(Gtk.Align.START)
         self._hint_label.set_margin_top(2)
+        self._hint_label.set_no_show_all(True)
         self._hint_label.set_visible(False)
-        self._card.card_content.append(self._hint_label)
+        self._card.card_content.pack_start(self._hint_label, False, False, 0)
 
-        self.append(self._card)
+        self.pack_start(self._card, False, False, 0)
 
         # Subscribe to hotplug signal.
         self._dbus_client.subscribe_signal(
@@ -115,8 +116,14 @@ class AudioInputSection(Gtk.Box):
     # ------------------------------------------------------------------
 
     def _populate_devices(self) -> None:
-        """Fetch the device list from the D-Bus service and rebuild the UI."""
+        """Fetch the device list from the D-Bus service and rebuild the UI.
+
+        Falls back to local detection via ``sounddevice`` when the
+        service is unreachable.
+        """
         raw = self._dbus_client.get_audio_devices()
+        if raw is None:
+            raw = self._detect_devices_locally()
         if raw is None:
             raw = []
 
@@ -131,20 +138,36 @@ class AudioInputSection(Gtk.Box):
         self._devices = devices
         self._rebuild_dropdown()
 
+    @staticmethod
+    def _detect_devices_locally():
+        """Detect input devices locally using sounddevice."""
+        try:
+            import sounddevice as sd
+            devices = sd.query_devices()
+            result = []
+            for idx, dev in enumerate(devices):
+                if dev.get("max_input_channels", 0) > 0:
+                    result.append((str(idx), dev["name"]))
+            if result:
+                logger.info("Detected %d input device(s) locally.", len(result))
+                return result
+        except Exception as exc:
+            logger.warning("Local audio device detection failed: %s", exc)
+        return None
+
     def _rebuild_dropdown(self) -> None:
         """Repopulate the dropdown StringList from ``self._devices``."""
         self._suppress_signal = True
 
         # Clear the existing model.
-        while self._string_list.get_n_items() > 0:
-            self._string_list.remove(0)
+        self._dropdown.remove_all()
 
         # "Auto" is always the first entry.
         auto_label = i18n.t("audio.auto", fallback="Auto (System Default)")
-        self._string_list.append(auto_label)
+        self._dropdown.append_text(auto_label)
 
         for _dev_id, dev_name in self._devices:
-            self._string_list.append(dev_name)
+            self._dropdown.append_text(dev_name)
 
         # Select the entry matching the current config value.
         current_id = self._config.get("audio_input", _AUTO_DEVICE_ID)
@@ -155,16 +178,16 @@ class AudioInputSection(Gtk.Box):
                     selected_index = idx + 1  # +1 because Auto is at index 0
                     break
 
-        self._dropdown.set_selected(selected_index)
+        self._dropdown.set_active(selected_index)
 
         # Show or hide no-device warning.
         has_real_devices = len(self._devices) > 0
         self._error_box.set_visible(not has_real_devices)
         self._hint_label.set_visible(not has_real_devices)
         if not has_real_devices:
-            self._dropdown.add_css_class("text-error")
+            self._dropdown.get_style_context().add_class("text-error")
         else:
-            self._dropdown.remove_css_class("text-error")
+            self._dropdown.get_style_context().remove_class("text-error")
 
         self._suppress_signal = False
 
@@ -172,12 +195,12 @@ class AudioInputSection(Gtk.Box):
     # Selection handling
     # ------------------------------------------------------------------
 
-    def _on_selection_changed(self, dropdown, param) -> None:
+    def _on_selection_changed(self, combo) -> None:
         if self._suppress_signal:
             return
 
-        idx = dropdown.get_selected()
-        if idx == 0 or idx == Gtk.INVALID_LIST_POSITION:
+        idx = combo.get_active()
+        if idx == 0 or idx < 0:
             self._config["audio_input"] = _AUTO_DEVICE_ID
         else:
             device_idx = idx - 1

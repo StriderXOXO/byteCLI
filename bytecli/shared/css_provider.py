@@ -2,7 +2,7 @@
 CSS provider loader for ByteCLI.
 
 Reads ``bytecli/data/bytecli.css`` and installs the stylesheet on the default
-GDK display so that all GTK 4 widgets in the process pick up the
+GDK screen so that all GTK 3 widgets in the process pick up the
 ByteCLI design tokens automatically.
 
 Usage (typically called once during application startup):
@@ -29,7 +29,7 @@ def load_css() -> None:
     """Load the ByteCLI CSS stylesheet and apply it to the default display.
 
     This must be called **after** ``Gtk.init()`` (or after the ``Gtk.Application``
-    has been constructed) so that a default display is available.
+    has been constructed) so that a default screen is available.
 
     Raises no exceptions -- errors are logged and the application continues
     with the GTK default styling.
@@ -37,11 +37,11 @@ def load_css() -> None:
     try:
         import gi
 
-        gi.require_version("Gtk", "4.0")
-        gi.require_version("Gdk", "4.0")
+        gi.require_version("Gtk", "3.0")
+        gi.require_version("Gdk", "3.0")
         from gi.repository import Gdk, Gtk
     except (ImportError, ValueError) as exc:
-        logger.error("GTK 4 Python bindings are not available: %s", exc)
+        logger.error("GTK 3 Python bindings are not available: %s", exc)
         return
 
     if not os.path.isfile(_CSS_PATH):
@@ -56,14 +56,14 @@ def load_css() -> None:
         logger.error("Failed to parse CSS file %s: %s", _CSS_PATH, exc)
         return
 
-    display = Gdk.Display.get_default()
-    if display is None:
-        logger.error("No default GDK display -- cannot apply CSS.")
+    screen = Gdk.Screen.get_default()
+    if screen is None:
+        logger.error("No default GDK screen -- cannot apply CSS.")
         return
 
-    Gtk.StyleContext.add_provider_for_display(
-        display,
+    Gtk.StyleContext.add_provider_for_screen(
+        screen,
         provider,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        Gtk.STYLE_PROVIDER_PRIORITY_USER,
     )
     logger.debug("ByteCLI CSS loaded from %s", _CSS_PATH)

@@ -26,8 +26,8 @@ from typing import Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
-gi.require_version("Gdk", "4.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 
 from gi.repository import Gdk, GLib, Gtk
 
@@ -66,7 +66,6 @@ class _ToastWindow(Gtk.Window):
         self.set_decorated(False)
         self.set_resizable(False)
         self.set_can_focus(False)
-        self.set_focusable(False)
         self.set_default_size(_TOAST_WIDTH, -1)
         self.set_title("ByteCLI Toast")
 
@@ -77,16 +76,16 @@ class _ToastWindow(Gtk.Window):
         # Apply card CSS to this window.
         card_provider = Gtk.CssProvider()
         card_provider.load_from_data(_TOAST_CSS)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
             card_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
         # Root container.
         root = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        root.add_css_class("toast")
-        root.add_css_class(f"toast-{variant}")
+        root.get_style_context().add_class("toast")
+        root.get_style_context().add_class(f"toast-{variant}")
         root.set_margin_start(0)
         root.set_margin_end(0)
 
@@ -94,11 +93,11 @@ class _ToastWindow(Gtk.Window):
         bar = Gtk.DrawingArea()
         bar.set_size_request(3, 20)
         bar.set_valign(Gtk.Align.CENTER)
-        bar.set_draw_func(self._make_bar_draw(bar_rgba))
-        root.append(bar)
+        bar.connect("draw", self._make_bar_draw(bar_rgba))
+        root.pack_start(bar, False, False, 0)
 
         # Icon.
-        icon = Gtk.Image.new_from_icon_name(icon_name)
+        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
         icon.set_pixel_size(16)
         icon.set_valign(Gtk.Align.CENTER)
         # Apply icon colour via CSS.
@@ -107,25 +106,27 @@ class _ToastWindow(Gtk.Window):
         icon.get_style_context().add_provider(
             icon_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
-        root.append(icon)
+        root.pack_start(icon, False, False, 0)
 
         # Message label.
         label = Gtk.Label(label=message)
         label.set_halign(Gtk.Align.START)
         label.set_hexpand(True)
-        label.set_wrap(True)
+        label.set_line_wrap(True)
         label.set_max_width_chars(38)
         _apply_font_size(label, 13)
-        root.append(label)
+        root.pack_start(label, True, True, 0)
 
-        self.set_child(root)
+        self.add(root)
 
         # Apply X11 properties after realize.
         self.connect("realize", self._on_realize)
 
     @staticmethod
     def _make_bar_draw(rgba):
-        def _draw(area, cr, w, h):
+        def _draw(area, cr):
+            w = area.get_allocated_width()
+            h = area.get_allocated_height()
             cr.set_source_rgba(*rgba)
             _rounded_rect(cr, 0, 0, w, h, 2)
             cr.fill()
@@ -136,13 +137,13 @@ class _ToastWindow(Gtk.Window):
 
     def _apply_x11(self) -> bool:
         """Set ``_NET_WM_STATE_ABOVE`` via ``xprop`` so the toast floats."""
-        surface = self.get_surface()
+        surface = self.get_window()
         if surface is None:
             return False
         try:
             from gi.repository import GdkX11
 
-            if not isinstance(surface, GdkX11.X11Surface):
+            if not isinstance(surface, GdkX11.X11Window):
                 return False
             xid = surface.get_xid()
         except (ImportError, AttributeError):
@@ -205,6 +206,7 @@ class ToastManager:
         toast = _ToastWindow(variant, message)
         self._toasts.append(toast)
         toast.connect("realize", lambda w: GLib.idle_add(self._position_toasts))
+        toast.show_all()
         toast.present()
 
         # Schedule auto-dismiss after 2 seconds.
@@ -228,11 +230,11 @@ class ToastManager:
         display = Gdk.Display.get_default()
         if display is None:
             return False
-        monitors = display.get_monitors()
-        if monitors.get_n_items() == 0:
+        n_monitors = display.get_n_monitors()
+        if n_monitors == 0:
             return False
 
-        monitor = monitors.get_item(0)
+        monitor = display.get_monitor(0)
         geo = monitor.get_geometry()
 
         # Stack from bottom-right, newest at the bottom of the visual stack.
@@ -244,13 +246,13 @@ class ToastManager:
             if nat_h <= 0:
                 nat_h = 56
             y_cursor -= nat_h
-            surface = toast.get_surface()
+            surface = toast.get_window()
             if surface is not None:
                 try:
                     from gi.repository import GdkX11
 
-                    if isinstance(surface, GdkX11.X11Surface):
-                        surface.move(x, y_cursor)
+                    if isinstance(surface, GdkX11.X11Window):
+                        toast.move(x, y_cursor)
                 except (ImportError, AttributeError):
                     pass
             y_cursor -= _TOAST_SPACING

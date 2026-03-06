@@ -19,8 +19,8 @@ from typing import Optional
 
 import gi
 
-gi.require_version("Gtk", "4.0")
-gi.require_version("Gdk", "4.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 
 from gi.repository import Gdk, GLib, Gtk
 
@@ -64,7 +64,7 @@ class HistoryPanel(Gtk.Window):
 
         # Build the UI shell.
         self._outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self._outer_box.add_css_class("history-panel")
+        self._outer_box.get_style_context().add_class("history-panel")
         self._outer_box.set_size_request(_PANEL_WIDTH, -1)
 
         # Inline CSS for the panel background.
@@ -78,26 +78,26 @@ class HistoryPanel(Gtk.Window):
         header.set_margin_bottom(10)
 
         title_label = Gtk.Label(label=i18n.t("indicator.history", fallback="History"))
-        title_label.add_css_class("font-semibold")
+        title_label.get_style_context().add_class("font-semibold")
         title_label.set_halign(Gtk.Align.START)
         _apply_font_size(title_label, 13)
-        header.append(title_label)
+        header.pack_start(title_label, False, False, 0)
 
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
-        header.append(spacer)
+        header.pack_start(spacer, True, True, 0)
 
         self._count_label = Gtk.Label(label="")
-        self._count_label.add_css_class("text-muted")
+        self._count_label.get_style_context().add_class("text-muted")
         _apply_font_size(self._count_label, 11)
         self._count_label.set_halign(Gtk.Align.END)
-        header.append(self._count_label)
+        header.pack_start(self._count_label, False, False, 0)
 
-        self._outer_box.append(header)
+        self._outer_box.pack_start(header, False, False, 0)
 
         # Separator.
         sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        self._outer_box.append(sep)
+        self._outer_box.pack_start(sep, False, False, 0)
 
         # Scrolled area for entries.
         self._scroll = Gtk.ScrolledWindow()
@@ -106,10 +106,10 @@ class HistoryPanel(Gtk.Window):
         self._scroll.set_propagate_natural_height(True)
 
         self._entries_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self._scroll.set_child(self._entries_box)
-        self._outer_box.append(self._scroll)
+        self._scroll.add(self._entries_box)
+        self._outer_box.pack_start(self._scroll, True, True, 0)
 
-        self.set_child(self._outer_box)
+        self.add(self._outer_box)
 
         # Position after realize.
         self.connect("realize", self._on_realize)
@@ -129,13 +129,13 @@ class HistoryPanel(Gtk.Window):
         GLib.idle_add(self._position_above_indicator)
 
     def _apply_x11_properties(self) -> bool:
-        surface = self.get_surface()
+        surface = self.get_window()
         if surface is None:
             return False
         try:
             from gi.repository import GdkX11
 
-            if not isinstance(surface, GdkX11.X11Surface):
+            if not isinstance(surface, GdkX11.X11Window):
                 return False
             xid = surface.get_xid()
         except (ImportError, AttributeError):
@@ -167,11 +167,11 @@ class HistoryPanel(Gtk.Window):
         display = Gdk.Display.get_default()
         if display is None:
             return False
-        monitors = display.get_monitors()
-        if monitors.get_n_items() == 0:
+        n_monitors = display.get_n_monitors()
+        if n_monitors == 0:
             return False
 
-        monitor = monitors.get_item(0)
+        monitor = display.get_monitor(0)
         geo = monitor.get_geometry()
 
         nat_height = self.get_preferred_size()[1].height
@@ -182,13 +182,13 @@ class HistoryPanel(Gtk.Window):
         # Indicator is 48px from bottom + ~40px tall. Panel goes above that.
         y = geo.y + geo.height - 48 - 40 - nat_height - 2
 
-        surface = self.get_surface()
-        if surface is not None:
+        gdk_win = self.get_window()
+        if gdk_win is not None:
             try:
                 from gi.repository import GdkX11
 
-                if isinstance(surface, GdkX11.X11Surface):
-                    surface.move(x, y)
+                if isinstance(gdk_win, GdkX11.X11Window):
+                    self.move(x, y)
             except (ImportError, AttributeError):
                 pass
         return False
@@ -249,11 +249,11 @@ class HistoryPanel(Gtk.Window):
         """Return the X11 window IDs of the panel and the indicator."""
         xids: set[int] = set()
         # Panel XID.
-        surface = self.get_surface()
+        surface = self.get_window()
         if surface is not None:
             try:
                 from gi.repository import GdkX11
-                if isinstance(surface, GdkX11.X11Surface):
+                if isinstance(surface, GdkX11.X11Window):
                     xids.add(surface.get_xid())
             except (ImportError, AttributeError):
                 pass
@@ -270,11 +270,8 @@ class HistoryPanel(Gtk.Window):
     def refresh(self) -> None:
         """Fetch history from D-Bus and rebuild the entry list."""
         # Clear existing children.
-        child = self._entries_box.get_first_child()
-        while child is not None:
-            next_child = child.get_next_sibling()
+        for child in self._entries_box.get_children():
             self._entries_box.remove(child)
-            child = next_child
 
         entries = self._dbus_client.get_history()
         if entries is None:
@@ -304,12 +301,14 @@ class HistoryPanel(Gtk.Window):
                 text = str(entry)
                 timestamp = ""
             row = self._build_entry_row(text, timestamp)
-            self._entries_box.append(row)
+            self._entries_box.pack_start(row, False, False, 0)
+            row.show_all()
 
             # Separator between rows (not after the last one).
             if idx < count - 1:
                 sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-                self._entries_box.append(sep)
+                self._entries_box.pack_start(sep, False, False, 0)
+                sep.show()
 
     # ------------------------------------------------------------------
     # Row construction
@@ -317,7 +316,7 @@ class HistoryPanel(Gtk.Window):
 
     def _build_entry_row(self, text: str, timestamp: str) -> Gtk.Box:
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        row.add_css_class("history-row")
+        row.get_style_context().add_class("history-row")
         row.set_margin_start(14)
         row.set_margin_end(14)
         row.set_margin_top(10)
@@ -328,33 +327,33 @@ class HistoryPanel(Gtk.Window):
         text_col.set_hexpand(True)
 
         text_label = Gtk.Label(label=text)
-        text_label.add_css_class("history-text")
+        text_label.get_style_context().add_class("history-text")
         text_label.set_halign(Gtk.Align.START)
         text_label.set_ellipsize(3)  # Pango.EllipsizeMode.END
         text_label.set_max_width_chars(35)
         text_label.set_lines(1)
         _apply_font_size(text_label, 12)
-        text_col.append(text_label)
+        text_col.pack_start(text_label, False, False, 0)
 
         if timestamp:
             time_label = Gtk.Label(label=timestamp)
-            time_label.add_css_class("text-muted")
+            time_label.get_style_context().add_class("text-muted")
             time_label.set_halign(Gtk.Align.START)
             _apply_font_size(time_label, 10)
-            text_col.append(time_label)
+            text_col.pack_start(time_label, False, False, 0)
 
-        row.append(text_col)
+        row.pack_start(text_col, True, True, 0)
 
         # Copy button.
         copy_btn = Gtk.Button()
-        copy_btn.add_css_class("icon-btn")
-        copy_icon = Gtk.Image.new_from_icon_name("edit-copy-symbolic")
+        copy_btn.get_style_context().add_class("icon-btn")
+        copy_icon = Gtk.Image.new_from_icon_name("edit-copy-symbolic", Gtk.IconSize.BUTTON)
         copy_icon.set_pixel_size(14)
-        copy_icon.add_css_class("text-muted")
-        copy_btn.set_child(copy_icon)
+        copy_icon.get_style_context().add_class("text-muted")
+        copy_btn.add(copy_icon)
         copy_btn.set_valign(Gtk.Align.CENTER)
         copy_btn.connect("clicked", self._on_copy_clicked, text)
-        row.append(copy_btn)
+        row.pack_start(copy_btn, False, False, 0)
 
         return row
 
@@ -364,19 +363,20 @@ class HistoryPanel(Gtk.Window):
         empty_box.set_halign(Gtk.Align.CENTER)
         empty_box.set_size_request(-1, _EMPTY_HEIGHT)
 
-        icon = Gtk.Image.new_from_icon_name("mail-unread-symbolic")
+        icon = Gtk.Image.new_from_icon_name("mail-unread-symbolic", Gtk.IconSize.BUTTON)
         icon.set_pixel_size(24)
-        icon.add_css_class("text-muted")
-        empty_box.append(icon)
+        icon.get_style_context().add_class("text-muted")
+        empty_box.pack_start(icon, False, False, 0)
 
         label = Gtk.Label(
             label=i18n.t("indicator.history_empty", fallback="No voice input history yet")
         )
-        label.add_css_class("text-muted")
+        label.get_style_context().add_class("text-muted")
         _apply_font_size(label, 13)
-        empty_box.append(label)
+        empty_box.pack_start(label, False, False, 0)
 
-        self._entries_box.append(empty_box)
+        self._entries_box.pack_start(empty_box, False, False, 0)
+        empty_box.show_all()
 
     # ------------------------------------------------------------------
     # Clipboard
